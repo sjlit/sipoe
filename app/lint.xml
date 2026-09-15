@@ -3,4 +3,8 @@
     <issue id="ObsoleteSdkInt">
         <ignore path="src/main/res/mipmap-anydpi-v26" />
     </issue>
+    <!--
+        Sipoe 主动剔除 x86_64 / x86 以压缩 APK;ChromeOS 不在目标平台,故忽略警告
+    -->
+    <issue id="ChromeOsAbiSupport" severity="ignore" />
 </lint>

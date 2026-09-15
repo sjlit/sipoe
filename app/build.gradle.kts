@@ -24,6 +24,10 @@ android {
         targetSdk = 37
         versionCode = 1
         versionName = "0.1.0"
+        ndk {
+            // 仅打包主流架构以减小 APK;x86_64 / x86 主要用于模拟器调试
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+        }
     }
 
     signingConfigs {
@@ -39,7 +43,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             if (keystorePropertiesFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")
             }
