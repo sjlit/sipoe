@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">Sipoe</string>
+
+    <string name="status_idle">未连接</string>
+    <string name="status_registering">注册中…</string>
+    <string name="status_registered">已注册</string>
+    <string name="status_failed">注册失败</string>
+    <string name="status_cleared">已注销</string>
+
+    <string name="notification_channel_status">SIP 注册状态</string>
+    <string name="notification_channel_status_desc">保持账号在线以接收来电</string>
+    <string name="notification_channel_call">来电</string>
+    <string name="notification_channel_call_desc">来电铃声与提醒</string>
+
+    <string name="call_status_incoming">来电</string>
+    <string name="call_status_connecting">呼叫中…</string>
+    <string name="call_status_answering">接听中…</string>
+    <string name="call_status_connected">通话中</string>
+    <string name="call_status_ended">已结束</string>
+    <string name="call_status_error">呼叫失败</string>
+</resources>

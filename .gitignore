@@ -1,0 +1,25 @@
+# IDE / 构建工具
+*.iml
+.gradle
+.kotlin
+/.idea
+
+# 本机配置(SDK 路径等,不入库)
+/local.properties
+local.properties
+
+# 构建产物
+/build
+**/build/
+/captures
+.externalNativeBuild
+.cxx
+
+# 打包产物
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# 系统文件
+.DS_Store
