@@ -1,6 +1,7 @@
 package com.sipoe.softphone
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -21,10 +22,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import com.sipoe.softphone.data.LocaleSupport
 import com.sipoe.softphone.ui.SipoeNavHost
 import com.sipoe.softphone.ui.theme.SipoeTheme
 
 class MainActivity : ComponentActivity() {
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleSupport.wrap(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -64,6 +71,12 @@ private fun RequestPermissionsOnce() {
                 PackageManager.PERMISSION_GRANTED
             ) {
                 add(Manifest.permission.POST_NOTIFICATIONS)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) !=
+                PackageManager.PERMISSION_GRANTED
+            ) {
+                add(Manifest.permission.BLUETOOTH_CONNECT)
             }
         }
         if (missing.isNotEmpty()) launcher.launch(missing.toTypedArray())

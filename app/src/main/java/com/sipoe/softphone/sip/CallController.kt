@@ -1,19 +1,26 @@
 package com.sipoe.softphone.sip
 
+import android.Manifest
 import android.content.Context
-import android.util.Log
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.annotation.StringRes
+import androidx.core.content.ContextCompat
 import com.sipoe.softphone.R
 import com.sipoe.softphone.data.CallLogDirection
 import com.sipoe.softphone.data.CallLogEntry
 import com.sipoe.softphone.data.CallLogStore
+import com.sipoe.softphone.diag.DiagLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.linphone.core.AudioDevice
@@ -25,9 +32,18 @@ import org.linphone.core.Reason
 
 enum class CallDirection { Incoming, Outgoing }
 
-enum class CallStatus { Incoming, Connecting, Connected, Ended, Error }
+enum class CallStatus { Incoming, Connecting, Connected, Ending, Ended, Error }
 
 enum class AudioRoute { Earpiece, Speaker, Bluetooth, Headset }
+
+val AudioRoute.labelRes: Int
+    @StringRes
+    get() = when (this) {
+        AudioRoute.Earpiece -> R.string.route_earpiece
+        AudioRoute.Speaker -> R.string.route_speaker
+        AudioRoute.Bluetooth -> R.string.route_bluetooth
+        AudioRoute.Headset -> R.string.route_headset
+    }
 
 data class CallUiState(
     val number: String,
@@ -46,6 +62,7 @@ val CallStatus.labelRes: Int
         CallStatus.Incoming -> R.string.call_status_incoming
         CallStatus.Connecting -> R.string.call_status_connecting
         CallStatus.Connected -> R.string.call_status_connected
+        CallStatus.Ending -> R.string.call_status_ending
         CallStatus.Ended -> R.string.call_status_ended
         CallStatus.Error -> R.string.call_status_error
     }
@@ -60,8 +77,10 @@ val CallUiState.displayLabelRes: Int
 
 object CallController {
     private const val TAG = "CallController"
+    private const val TERMINATE_TIMEOUT_MILLIS = 3_000L
 
     private var core: Core? = null
+    private var appContext: Context? = null
 
     @field:android.annotation.SuppressLint("StaticFieldLeak")
     private var store: CallLogStore? = null
@@ -70,23 +89,47 @@ object CallController {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var clearJob: Job? = null
+    private var terminateJob: Job? = null
 
     private val _state = MutableStateFlow<CallUiState?>(null)
     val state: StateFlow<CallUiState?> = _state.asStateFlow()
 
+    private val _events = MutableSharedFlow<String>(extraBufferCapacity = 8)
+    val events: SharedFlow<String> = _events.asSharedFlow()
+
     fun attach(core: Core, context: Context) {
         this.core = core
+        this.appContext = context.applicationContext
         this.store = CallLogStore(context.applicationContext)
         core.addListener(listener)
+    }
+
+    private fun notifyEvent(message: String) {
+        _events.tryEmit(message)
+    }
+
+    private fun notifyEvent(@StringRes messageRes: Int, vararg args: Any) {
+        val context = appContext ?: return
+        _events.tryEmit(context.getString(messageRes, *args))
+    }
+
+    private fun isBusy(): Boolean = when (_state.value?.status) {
+        null, CallStatus.Ended, CallStatus.Error -> false
+        else -> true
     }
 
     fun dial(number: String) {
         val current = core ?: return
         val trimmed = number.trim()
         if (trimmed.isEmpty()) return
+        if (isBusy()) {
+            notifyEvent(R.string.call_event_busy)
+            return
+        }
         val domain = current.defaultAccount?.params?.identityAddress?.domain ?: return
         val address = Factory.instance().createAddress("sip:$trimmed@$domain") ?: return
         clearJob?.cancel()
+        terminateJob?.cancel()
         recorded = false
         _state.value = CallUiState(
             number = trimmed,
@@ -101,11 +144,29 @@ object CallController {
     }
 
     fun decline() {
-        currentCall?.decline(Reason.Declined)
+        val call = currentCall ?: return
+        endCall { call.decline(Reason.Declined) }
     }
 
     fun hangup() {
-        currentCall?.terminate()
+        val call = currentCall ?: return
+        endCall { call.terminate() }
+    }
+
+    private fun endCall(action: () -> Unit) {
+        if (_state.value?.status == CallStatus.Ending) return
+        updateState { it.copy(status = CallStatus.Ending) }
+        DiagLog.i(TAG, "Hangup requested")
+        action()
+        terminateJob?.cancel()
+        terminateJob = scope.launch {
+            delay(TERMINATE_TIMEOUT_MILLIS)
+            if (_state.value?.status == CallStatus.Ending) {
+                DiagLog.w(TAG, "Hangup timed out, forcing ended state")
+                updateState { it.copy(status = CallStatus.Ended) }
+                scheduleClear(1_000)
+            }
+        }
     }
 
     fun toggleMute() {
@@ -118,11 +179,39 @@ object CallController {
     fun selectRoute(route: AudioRoute) {
         val call = currentCall ?: return
         val current = core ?: return
+        if (route == AudioRoute.Bluetooth && !hasBluetoothPermission()) {
+            notifyEvent(R.string.call_event_bluetooth_permission)
+            return
+        }
         val device = current.audioDevices.firstOrNull {
             it.hasCapability(AudioDevice.Capabilities.CapabilityPlay) && it.type.toAudioRoute() == route
-        } ?: return
-        call.setOutputAudioDevice(device)
-        updateState { it.copy(currentRoute = route) }
+        } ?: run {
+            val label = appContext?.getString(route.labelRes).orEmpty()
+            notifyEvent(R.string.call_event_route_missing, label)
+            return
+        }
+        val result = runCatching { call.setOutputAudioDevice(device) }
+        if (result.isFailure) {
+            DiagLog.e(TAG, "Unable to select audio route $route", result.exceptionOrNull())
+            notifyEvent(R.string.call_event_route_failed)
+        }
+        val actual = runCatching { call.outputAudioDevice?.type?.toAudioRoute() }.getOrNull()
+        if (actual != null && actual != route) {
+            DiagLog.w(TAG, "Audio route selection fell back to $actual")
+        }
+        updateState { it.copy(currentRoute = actual ?: route) }
+    }
+
+    private fun callErrorMessage(raw: String): String? {
+        val context = appContext ?: return raw.ifBlank { null }
+        return mapCallError(context, raw) ?: context.getString(R.string.call_failed)
+    }
+
+    private fun hasBluetoothPermission(): Boolean {
+        val context = appContext ?: return true
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) ==
+            PackageManager.PERMISSION_GRANTED
     }
 
     fun cycleRoute() {
@@ -178,7 +267,7 @@ object CallController {
         recorded = true
         val logStore = store ?: return
         val number = _state.value?.number?.takeIf { it.isNotBlank() }
-            ?: call.remoteAddress?.username
+            ?: call.remoteAddress.username
             ?: return
         val wasConnected = _state.value?.startedAt != null
         val direction = when {
@@ -203,18 +292,26 @@ object CallController {
             state: Call.State,
             message: String,
         ) {
-            Log.i(TAG, "Call state: $state remote=${call.remoteAddressAsString} message=$message")
-            com.sipoe.softphone.diag.DiagLog.i(
+            DiagLog.i(
                 TAG,
-                "Call state=$state remote=${call.remoteAddressAsString} message=$message",
+                "Call state=$state remote=${call.remoteAddress.asString()} message=$message",
             )
             when (state) {
                 Call.State.IncomingReceived, Call.State.IncomingEarlyMedia -> {
+                    if (currentCall != null) {
+                        DiagLog.w(
+                            TAG,
+                            "Rejecting second incoming call from ${call.remoteAddress.asString()}",
+                        )
+                        notifyEvent(R.string.call_event_second_call)
+                        call.decline(Reason.Busy)
+                        return
+                    }
                     currentCall = call
                     recorded = false
                     clearJob?.cancel()
                     _state.value = CallUiState(
-                        number = call.remoteAddress?.username ?: call.remoteAddressAsString.orEmpty(),
+                        number = call.remoteAddress.username ?: call.remoteAddress.asString(),
                         direction = CallDirection.Incoming,
                         status = CallStatus.Incoming,
                     )
@@ -245,6 +342,7 @@ object CallController {
                 }
 
                 Call.State.End, Call.State.Released -> {
+                    terminateJob?.cancel()
                     recordCall(call)
                     currentCall = null
                     updateState { it.copy(status = CallStatus.Ended) }
@@ -252,12 +350,13 @@ object CallController {
                 }
 
                 Call.State.Error -> {
+                    terminateJob?.cancel()
                     recordCall(call)
                     currentCall = null
                     updateState {
                         it.copy(
                             status = CallStatus.Error,
-                            errorMessage = mapCallError(message) ?: "呼叫失败",
+                            errorMessage = callErrorMessage(message),
                         )
                     }
                     scheduleClear(2_400)

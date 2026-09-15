@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -28,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.sipoe.softphone.ui.theme.SipoeTheme
 
 data class DialKey(val label: String, val tone: Int, val letters: String = "")
 
@@ -108,11 +108,12 @@ private fun DialKeyButton(
     onPress: () -> Unit,
     onLongPress: (() -> Unit)?,
 ) {
+    val sipoe = SipoeTheme.colors
     Box(
         modifier = Modifier
             .size(size)
             .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
+            .background(sipoe.dialKey)
             .combinedClickable(onClick = onPress, onLongClick = onLongPress)
             .semantics { contentDescription = key.label },
         contentAlignment = Alignment.Center,
@@ -122,13 +123,14 @@ private fun DialKeyButton(
                 text = key.label,
                 fontSize = if (key.letters.isEmpty()) 30.sp else 26.sp,
                 fontWeight = FontWeight.Light,
+                color = sipoe.onDialKey,
             )
             if (key.letters.isNotEmpty()) {
                 Text(
                     text = key.letters,
                     fontSize = 10.sp,
                     letterSpacing = 1.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = sipoe.onDialKey.copy(alpha = 0.75f),
                 )
             }
         }

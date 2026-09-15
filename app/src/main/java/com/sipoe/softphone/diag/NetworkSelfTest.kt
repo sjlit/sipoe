@@ -1,5 +1,7 @@
 package com.sipoe.softphone.diag
 
+import android.content.Context
+import com.sipoe.softphone.R
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
@@ -19,26 +21,28 @@ object NetworkSelfTest {
         isPermissionError(error)
     }
 
-    fun run(serverHost: String, serverPort: Int, timeoutMs: Int = 2500): Report {
+    fun run(context: Context, serverHost: String, serverPort: Int, timeoutMs: Int = 2500): Report {
         val lines = mutableListOf<String>()
         var restricted = false
 
         runCatching { InetAddress.getAllByName(serverHost).joinToString { it.hostAddress.orEmpty() } }
-            .onSuccess { lines += "DNS 解析: $it" }
-            .onFailure { lines += "DNS 解析失败: ${it.message}" }
+            .onSuccess { lines += context.getString(R.string.selftest_dns_ok, it) }
+            .onFailure {
+                lines += context.getString(R.string.selftest_dns_failed, it.message.orEmpty())
+            }
 
         runCatching { DatagramSocket(0).use { } }
-            .onSuccess { lines += "本地 UDP 绑定(随机端口): 成功" }
+            .onSuccess { lines += context.getString(R.string.selftest_bind_random_ok) }
             .onFailure {
                 if (isPermissionError(it)) restricted = true
-                lines += "本地 UDP 绑定(随机端口)失败: ${it.message}"
+                lines += context.getString(R.string.selftest_bind_random_failed, it.message.orEmpty())
             }
 
         runCatching { DatagramSocket(5060).use { } }
-            .onSuccess { lines += "本地 UDP 绑定(5060): 成功" }
+            .onSuccess { lines += context.getString(R.string.selftest_bind_5060_ok) }
             .onFailure {
                 if (isPermissionError(it)) restricted = true
-                lines += "本地 UDP 绑定(5060)失败: ${it.message}"
+                lines += context.getString(R.string.selftest_bind_5060_failed, it.message.orEmpty())
             }
 
         try {
@@ -64,18 +68,32 @@ object NetworkSelfTest {
                     .lineSequence()
                     .firstOrNull()
                     .orEmpty()
-                lines += "UDP 探测 $serverHost:$serverPort: 收到响应 → $firstLine"
+                lines += context.getString(
+                    R.string.selftest_probe_ok,
+                    serverHost,
+                    serverPort,
+                    firstLine,
+                )
             }
         } catch (timeout: SocketTimeoutException) {
-            lines += "UDP 探测 $serverHost:$serverPort: 已发出但 ${timeoutMs / 1000} 秒内无响应" +
-                "(服务器可能不回应 OPTIONS,或被中间设备丢弃)"
+            lines += context.getString(
+                R.string.selftest_probe_timeout,
+                serverHost,
+                serverPort,
+                timeoutMs / 1000,
+            )
         } catch (error: Throwable) {
             if (isPermissionError(error)) restricted = true
-            lines += "UDP 探测 $serverHost:$serverPort 失败: ${error.message}"
+            lines += context.getString(
+                R.string.selftest_probe_failed,
+                serverHost,
+                serverPort,
+                error.message.orEmpty(),
+            )
         }
 
         if (restricted) {
-            lines += "结论: 系统拦截了应用联网(EPERM),REGISTER 无法发出"
+            lines += context.getString(R.string.selftest_restricted)
         }
 
         return Report(lines, restricted)

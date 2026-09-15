@@ -26,6 +26,10 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch { store.remove(entry.id) }
     }
 
+    fun restore(entry: CallLogEntry) {
+        viewModelScope.launch { store.restore(entry) }
+    }
+
     fun clearAll() {
         viewModelScope.launch { store.clear() }
     }

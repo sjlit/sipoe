@@ -1,5 +1,6 @@
 package com.sipoe.softphone.ui.account
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -7,11 +8,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -50,6 +55,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -58,6 +64,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.sipoe.softphone.R
 import com.sipoe.softphone.data.AccountSettings
 import com.sipoe.softphone.data.SipTransport
 import com.sipoe.softphone.sip.RegistrationStatus
@@ -76,18 +83,43 @@ fun AccountScreen(
 ) {
     val saved by viewModel.saved.collectAsStateWithLifecycle()
     val registration by viewModel.registration.collectAsStateWithLifecycle()
+    val saving by viewModel.saving.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val resources = LocalResources.current
 
     var form by remember(saved) { mutableStateOf(saved ?: AccountSettings()) }
     var advancedExpanded by rememberSaveable { mutableStateOf(false) }
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
     var showClearDialog by rememberSaveable { mutableStateOf(false) }
+    var awaitingOutcome by rememberSaveable { mutableStateOf(false) }
+    var showDiscardDialog by rememberSaveable { mutableStateOf(false) }
+    val isDirty = form != (saved ?: AccountSettings())
+
+    fun attemptBack() {
+        if (isDirty) showDiscardDialog = true else onBack()
+    }
+
+    BackHandler(enabled = isDirty) { showDiscardDialog = true }
 
     LaunchedEffect(Unit) {
         viewModel.messages.collect { message ->
+            awaitingOutcome = false
+            snackbarHostState.currentSnackbarData?.dismiss()
             snackbarHostState.showSnackbar(message)
         }
+    }
+
+    LaunchedEffect(awaitingOutcome, registration.status) {
+        if (!awaitingOutcome) return@LaunchedEffect
+        val outcome = when (registration.status) {
+            RegistrationStatus.Registered -> resources.getString(R.string.account_register_success)
+            RegistrationStatus.Failed -> resources.getString(R.string.account_register_failed)
+            else -> null
+        } ?: return@LaunchedEffect
+        awaitingOutcome = false
+        snackbarHostState.currentSnackbarData?.dismiss()
+        snackbarHostState.showSnackbar(outcome)
     }
 
     Scaffold(
@@ -97,35 +129,51 @@ fun AccountScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .navigationBarsPadding()
+                        .windowInsetsPadding(
+                            WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom),
+                        )
                         .padding(horizontal = 20.dp, vertical = 12.dp),
                 ) {
                     Button(
                         onClick = {
                             val error = form.validate()
                             if (error != null) {
-                                scope.launch { snackbarHostState.showSnackbar(error) }
+                                scope.launch {
+                                    snackbarHostState.currentSnackbarData?.dismiss()
+                                    snackbarHostState.showSnackbar(resources.getString(error))
+                                }
                             } else {
+                                awaitingOutcome = true
                                 viewModel.save(form)
                             }
                         },
+                        enabled = !saving,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text("保存并注册")
+                        Text(
+                            text = stringResource(
+                                if (saving) R.string.account_saving else R.string.account_save,
+                            ),
+                        )
                     }
                 }
             }
         },
         topBar = {
             TopAppBar(
-                title = { Text("账号") },
+                title = { Text(stringResource(R.string.account_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                    IconButton(onClick = { attemptBack() }) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.common_back),
+                        )
                     }
                 },
                 actions = {
-                    TextButton(onClick = onOpenDiagnostics) { Text("诊断") }
+                    TextButton(onClick = onOpenDiagnostics) {
+                        Text(stringResource(R.string.account_diagnostics))
+                    }
                 },
             )
         },
@@ -154,8 +202,8 @@ fun AccountScreen(
             OutlinedTextField(
                 value = form.domain,
                 onValueChange = { form = form.copy(domain = it) },
-                label = { Text("域") },
-                placeholder = { Text("例如 sip.example.com") },
+                label = { Text(stringResource(R.string.account_field_domain)) },
+                placeholder = { Text(stringResource(R.string.account_field_domain_hint)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
                 modifier = Modifier.fillMaxWidth(),
@@ -164,8 +212,8 @@ fun AccountScreen(
             OutlinedTextField(
                 value = form.proxy,
                 onValueChange = { form = form.copy(proxy = it) },
-                label = { Text("代理(可选)") },
-                placeholder = { Text("留空则使用域,支持 host:port") },
+                label = { Text(stringResource(R.string.account_field_proxy)) },
+                placeholder = { Text(stringResource(R.string.account_field_proxy_hint)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
                 modifier = Modifier.fillMaxWidth(),
@@ -174,7 +222,7 @@ fun AccountScreen(
             OutlinedTextField(
                 value = form.username,
                 onValueChange = { form = form.copy(username = it) },
-                label = { Text("用户名") },
+                label = { Text(stringResource(R.string.account_field_username)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 modifier = Modifier.fillMaxWidth(),
@@ -183,7 +231,7 @@ fun AccountScreen(
             OutlinedTextField(
                 value = form.password,
                 onValueChange = { form = form.copy(password = it) },
-                label = { Text("密码") },
+                label = { Text(stringResource(R.string.account_field_password)) },
                 singleLine = true,
                 visualTransformation = if (passwordVisible) {
                     VisualTransformation.None
@@ -193,7 +241,15 @@ fun AccountScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
                 trailingIcon = {
                     TextButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Text(if (passwordVisible) "隐藏" else "显示")
+                        Text(
+                            text = stringResource(
+                                if (passwordVisible) {
+                                    R.string.account_password_hide
+                                } else {
+                                    R.string.account_password_show
+                                },
+                            ),
+                        )
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -210,7 +266,7 @@ fun AccountScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "高级设置",
+                    text = stringResource(R.string.account_advanced),
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.weight(1f),
                 )
@@ -223,7 +279,7 @@ fun AccountScreen(
 
             AnimatedVisibility(visible = advancedExpanded) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("传输协议", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.account_transport), style = MaterialTheme.typography.labelLarge)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         SipTransport.entries.forEach { transport ->
                             FilterChip(
@@ -239,8 +295,18 @@ fun AccountScreen(
                         onValueChange = { input ->
                             form = form.copy(port = input.filter { it.isDigit() }.take(5).toIntOrNull() ?: 0)
                         },
-                        label = { Text("端口") },
-                        placeholder = { Text(if (form.transport == SipTransport.TLS) "默认 5061" else "默认 5060") },
+                        label = { Text(stringResource(R.string.account_port)) },
+                        placeholder = {
+                            Text(
+                                text = stringResource(
+                                    if (form.transport == SipTransport.TLS) {
+                                        R.string.account_port_hint_tls
+                                    } else {
+                                        R.string.account_port_hint
+                                    },
+                                ),
+                            )
+                        },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
                         modifier = Modifier.fillMaxWidth(),
@@ -251,7 +317,7 @@ fun AccountScreen(
                         onValueChange = { input ->
                             form = form.copy(registerExpires = input.filter { it.isDigit() }.take(4).toIntOrNull() ?: 0)
                         },
-                        label = { Text("注册有效期(秒)") },
+                        label = { Text(stringResource(R.string.account_register_expires)) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
                         modifier = Modifier.fillMaxWidth(),
@@ -261,7 +327,7 @@ fun AccountScreen(
                         Column(Modifier.weight(1f)) {
                             Text("STUN", style = MaterialTheme.typography.bodyLarge)
                             Text(
-                                text = "用于 NAT 穿透",
+                                text = stringResource(R.string.account_stun_desc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -276,7 +342,7 @@ fun AccountScreen(
                         OutlinedTextField(
                             value = form.stunServer,
                             onValueChange = { form = form.copy(stunServer = it) },
-                            label = { Text("STUN 服务器") },
+                            label = { Text(stringResource(R.string.account_stun_server)) },
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done),
                             modifier = Modifier.fillMaxWidth(),
@@ -292,17 +358,46 @@ fun AccountScreen(
                     onClick = { showClearDialog = true },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text("清空账号", color = MaterialTheme.colorScheme.error)
+                    Text(
+                        text = stringResource(R.string.account_clear),
+                        color = MaterialTheme.colorScheme.error,
+                    )
                 }
             }
         }
     }
 
+    if (showDiscardDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardDialog = false },
+            title = { Text(stringResource(R.string.account_discard_title)) },
+            text = { Text(stringResource(R.string.account_discard_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDiscardDialog = false
+                        onBack()
+                    },
+                ) {
+                    Text(
+                        text = stringResource(R.string.account_discard_confirm),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardDialog = false }) {
+                    Text(stringResource(R.string.account_discard_keep))
+                }
+            },
+        )
+    }
+
     if (showClearDialog) {
         AlertDialog(
             onDismissRequest = { showClearDialog = false },
-            title = { Text("清空账号?") },
-            text = { Text("将注销并删除本机保存的账号信息") },
+            title = { Text(stringResource(R.string.account_clear_title)) },
+            text = { Text(stringResource(R.string.account_clear_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -311,11 +406,16 @@ fun AccountScreen(
                         viewModel.clear()
                     },
                 ) {
-                    Text("清空", color = MaterialTheme.colorScheme.error)
+                    Text(
+                        text = stringResource(R.string.common_clear),
+                        color = MaterialTheme.colorScheme.error,
+                    )
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showClearDialog = false }) { Text("取消") }
+                TextButton(onClick = { showClearDialog = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
             },
         )
     }
@@ -370,7 +470,7 @@ private fun RegistrationCard(state: SipRegistrationState, onRetry: () -> Unit) {
                 }
             if (state.networkRestricted) {
                 Text(
-                    text = "系统拦截了应用联网(EPERM),请到系统设置允许 Sipoe 联网;见\"诊断\"页指引",
+                    text = stringResource(R.string.account_network_restricted),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                 )
@@ -380,7 +480,7 @@ private fun RegistrationCard(state: SipRegistrationState, onRetry: () -> Unit) {
                     onClick = onRetry,
                     contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp),
                 ) {
-                    Text("重试注册")
+                    Text(stringResource(R.string.account_retry_register))
                 }
             }
         }

@@ -39,13 +39,21 @@ class SipForegroundService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         DiagLog.i(TAG, "onStartCommand action=${intent?.action} startId=$startId")
-        when (intent?.action) {
-            ACTION_ANSWER -> CallController.accept()
-            ACTION_DECLINE -> CallController.decline()
-        }
-        refreshNotification(CallController.state.value)
         val core = SipCoreManager.ensureStarted()
         DiagLog.i(TAG, "Core ready: ${core != null}")
+        when (intent?.action) {
+            ACTION_ANSWER -> {
+                if (CallController.state.value != null) {
+                    CallController.accept()
+                } else {
+                    DiagLog.w(TAG, "Answer ignored: no incoming call")
+                }
+            }
+
+            ACTION_DECLINE -> CallController.decline()
+            ACTION_HANGUP -> CallController.hangup()
+        }
+        refreshNotification(CallController.state.value)
         startObserving()
         return START_STICKY
     }
@@ -112,6 +120,7 @@ class SipForegroundService : Service() {
             this,
             SipCoreManager.registration.value,
             call,
+            callActionIntent(ACTION_HANGUP),
         )
         if (foregroundTypes != types) {
             foregroundTypes = types
@@ -166,6 +175,7 @@ class SipForegroundService : Service() {
         private const val TAG = "SipService"
         private const val ACTION_ANSWER = "com.sipoe.softphone.action.ANSWER"
         private const val ACTION_DECLINE = "com.sipoe.softphone.action.DECLINE"
+        private const val ACTION_HANGUP = "com.sipoe.softphone.action.HANGUP"
 
         fun start(context: Context) {
             ContextCompat.startForegroundService(context, Intent(context, SipForegroundService::class.java))

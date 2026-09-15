@@ -1,5 +1,8 @@
 package com.sipoe.softphone.data
 
+import androidx.annotation.StringRes
+import com.sipoe.softphone.R
+
 enum class SipTransport(val label: String) {
     UDP("UDP"),
     TCP("TCP"),
@@ -40,16 +43,17 @@ data class AccountSettings(
     val serverAddress: String
         get() = "sip:$serverHost:$serverPort"
 
-    fun validate(): String? = when {
-        domain.isBlank() -> "请填写域"
-        domain.contains(' ') -> "域不能包含空格"
-        username.isBlank() -> "请填写用户名"
-        username.contains('@') -> "用户名请勿包含 @,域请填在域名段"
-        username.contains(' ') -> "用户名不能包含空格"
-        password.isBlank() -> "请填写密码"
-        serverHost.isBlank() -> "代理地址不合法"
-        port !in 0..65535 -> "端口需在 1-65535 之间"
-        registerExpires !in 60..3600 -> "注册有效期需在 60-3600 秒之间"
+    @StringRes
+    fun validate(): Int? = when {
+        domain.isBlank() -> R.string.validation_domain_required
+        domain.contains(' ') -> R.string.validation_domain_space
+        username.isBlank() -> R.string.validation_username_required
+        username.contains('@') -> R.string.validation_username_at
+        username.contains(' ') -> R.string.validation_username_space
+        password.isBlank() -> R.string.validation_password_required
+        serverHost.isBlank() -> R.string.validation_proxy_invalid
+        port !in 0..65535 -> R.string.validation_port_range
+        registerExpires !in 60..3600 -> R.string.validation_expires_range
         else -> null
     }
 

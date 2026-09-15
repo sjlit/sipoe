@@ -20,6 +20,13 @@ local.properties
 *.aab
 *.ap_
 *.dex
+/dist/
+
+# 签名密钥(严禁入库)
+keystore.properties
+*.jks
+*.keystore
+/keystore/
 
 # 系统文件
 .DS_Store

@@ -2,6 +2,7 @@ package com.sipoe.softphone.sip
 
 import android.content.Context
 import com.sipoe.softphone.BuildConfig
+import com.sipoe.softphone.R
 import com.sipoe.softphone.data.AccountSettings
 import com.sipoe.softphone.data.SipTransport
 import com.sipoe.softphone.diag.DiagLog
@@ -73,7 +74,7 @@ object SipCoreManager {
             DiagLog.e(TAG, "Unable to create Linphone core", it)
             _registration.value = SipRegistrationState(
                 status = RegistrationStatus.Failed,
-                message = "SIP 内核启动失败: ${it.message}",
+                message = context.getString(R.string.sip_core_start_failed, it.message.orEmpty()),
             )
         }.getOrNull()
     }
@@ -81,12 +82,13 @@ object SipCoreManager {
     @Synchronized
     fun applyAccount(settings: AccountSettings) {
         val normalized = settings.normalized()
+        val context = appContext
         if (!normalized.isComplete) {
             DiagLog.w(TAG, "Account incomplete, skipping registration")
             clearAccount()
             _registration.value = SipRegistrationState(
                 status = RegistrationStatus.Idle,
-                message = "账号信息不完整",
+                message = context?.getString(R.string.sip_account_incomplete),
             )
             return
         }
@@ -102,7 +104,10 @@ object SipCoreManager {
                 DiagLog.e(TAG, "Invalid identity address: ${normalized.identityUri}")
                 _registration.value = SipRegistrationState(
                     status = RegistrationStatus.Failed,
-                    message = "账号地址格式不正确:${normalized.identityUri}",
+                    message = context?.getString(
+                        R.string.sip_identity_invalid,
+                        normalized.identityUri,
+                    ),
                     rawMessage = "Invalid identity address",
                 )
                 return
@@ -125,7 +130,10 @@ object SipCoreManager {
                 DiagLog.e(TAG, "Invalid server address: ${normalized.serverAddress}")
                 _registration.value = SipRegistrationState(
                     status = RegistrationStatus.Failed,
-                    message = "服务器地址格式不正确:${normalized.serverAddress}",
+                    message = context?.getString(
+                        R.string.sip_server_invalid,
+                        normalized.serverAddress,
+                    ),
                     rawMessage = "Invalid server address",
                 )
                 return
@@ -202,18 +210,47 @@ object SipCoreManager {
     }
 
     fun debugSummary(): List<String> {
+        val context = appContext ?: return emptyList()
         val current = core
         return buildList {
-            add("内核: ${if (current != null) "已启动" else "未启动"}")
+            add(
+                context.getString(
+                    if (current != null) R.string.diag_state_started else R.string.diag_state_stopped,
+                ),
+            )
             if (current != null) {
                 val transports = runCatching { current.transports }.getOrNull()
-                add("传输端口: udp=${transports?.udpPort} tcp=${transports?.tcpPort} tls=${transports?.tlsPort}")
-                add("网络可达: ${current.isNetworkReachable()}")
+                add(
+                    context.getString(
+                        R.string.diag_core_transports,
+                        transports?.udpPort?.toString().orEmpty(),
+                        transports?.tcpPort?.toString().orEmpty(),
+                        transports?.tlsPort?.toString().orEmpty(),
+                    ),
+                )
+                add(context.getString(R.string.diag_core_reachable, current.isNetworkReachable().toString()))
                 val account = current.defaultAccount
-                add("默认账号: ${account?.params?.identityAddress?.asString() ?: "无"}")
-                add("注册状态: ${account?.state ?: "无"}")
+                add(
+                    context.getString(
+                        R.string.diag_core_default_account,
+                        account?.params?.identityAddress?.asString()
+                            ?: context.getString(R.string.diag_none),
+                    ),
+                )
+                add(
+                    context.getString(
+                        R.string.diag_core_registration,
+                        account?.state?.toString() ?: context.getString(R.string.diag_none),
+                    ),
+                )
             }
-            add("版本: ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
+            add(
+                context.getString(
+                    R.string.diag_core_version,
+                    BuildConfig.VERSION_NAME,
+                    BuildConfig.VERSION_CODE,
+                ),
+            )
         }
     }
 
@@ -249,10 +286,11 @@ object SipCoreManager {
             val errorInfo = if (status == RegistrationStatus.Failed) account.errorInfo else null
             val errorCode = errorInfo?.protocolCode?.takeIf { it > 0 }
             val errorPhrase = errorInfo?.phrase
+            val context = appContext
             _registration.value = SipRegistrationState(
                 status = status,
                 message = if (status == RegistrationStatus.Failed) {
-                    mapRegistrationError("$errorCode $errorPhrase $message")
+                    context?.let { mapRegistrationError(it, "$errorCode $errorPhrase $message") }
                 } else {
                     message
                 },

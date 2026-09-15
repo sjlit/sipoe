@@ -10,6 +10,8 @@ private val HangupRedLight = Color(0xFFD32F2F)
 private val HangupRedDark = Color(0xFFEF5350)
 private val WarningAmberLight = Color(0xFFB26A00)
 private val WarningAmberDark = Color(0xFFFFB74D)
+private val DialKeyLight = Color(0xFFE4EBED)
+private val DialKeyDark = Color(0xFF455A60)
 
 @Immutable
 data class SipoeColors(
@@ -18,6 +20,8 @@ data class SipoeColors(
     val hangup: Color,
     val onHangup: Color,
     val warning: Color,
+    val dialKey: Color,
+    val onDialKey: Color,
 )
 
 internal val LightSipoeColors = SipoeColors(
@@ -26,6 +30,8 @@ internal val LightSipoeColors = SipoeColors(
     hangup = HangupRedLight,
     onHangup = Color.White,
     warning = WarningAmberLight,
+    dialKey = DialKeyLight,
+    onDialKey = Color(0xFF14181A),
 )
 
 internal val DarkSipoeColors = SipoeColors(
@@ -34,6 +40,8 @@ internal val DarkSipoeColors = SipoeColors(
     hangup = HangupRedDark,
     onHangup = Color(0xFF690005),
     warning = WarningAmberDark,
+    dialKey = DialKeyDark,
+    onDialKey = Color(0xFFE3F1F4),
 )
 
 val LocalSipoeColors = staticCompositionLocalOf { LightSipoeColors }

@@ -1,0 +1,244 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name">Sipoe</string>
+
+    <string name="status_idle">Not connected</string>
+    <string name="status_registering">Registering…</string>
+    <string name="status_registered">Registered</string>
+    <string name="status_failed">Registration failed</string>
+    <string name="status_cleared">Unregistered</string>
+
+    <string name="notification_channel_status">SIP registration status</string>
+    <string name="notification_channel_status_desc">Keep the account online to receive calls</string>
+    <string name="notification_channel_call">Incoming calls</string>
+    <string name="notification_channel_call_desc">Ringtone and alerts for incoming calls</string>
+
+    <string name="call_status_incoming">Incoming call</string>
+    <string name="call_status_connecting">Calling…</string>
+    <string name="call_status_answering">Answering…</string>
+    <string name="call_status_connected">In call</string>
+    <string name="call_status_ending">Hanging up…</string>
+    <string name="call_status_ended">Ended</string>
+    <string name="call_status_error">Call failed</string>
+
+    <!-- Common -->
+    <string name="common_back">Back</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_delete">Delete</string>
+    <string name="common_clear">Clear</string>
+    <string name="common_copy">Copy</string>
+    <string name="common_paste">Paste</string>
+    <string name="common_open_settings">Open settings</string>
+
+    <!-- Dialer -->
+    <string name="dialer_history">Call history</string>
+    <string name="dialer_settings">Settings</string>
+    <string name="dialer_number_placeholder">Enter number</string>
+    <string name="dialer_number_menu_desc">Number, long press for options</string>
+    <string name="dialer_open_menu">Open options</string>
+    <string name="dialer_paste_and_dial">Paste and call</string>
+    <string name="dialer_backspace_desc">Delete, long press to clear</string>
+    <string name="dialer_call">Call</string>
+    <string name="dialer_setup_title">No account configured</string>
+    <string name="dialer_setup_message">Enter the SIP server, username and password to make and receive calls.</string>
+    <string name="dialer_not_registered">Not registered, calls may fail</string>
+    <string name="dialer_copied">Number copied</string>
+    <string name="dialer_clipboard_empty">No number in clipboard</string>
+
+    <!-- Permission hints -->
+    <string name="permission_mic_title">Microphone permission not granted</string>
+    <string name="permission_mic_message">Calls will have no audio and the other party won\'t hear you.</string>
+    <string name="permission_mic_action">Grant microphone</string>
+    <string name="permission_notification_title">Notifications are off</string>
+    <string name="permission_notification_message">You may miss calls when the screen is off or the app is in the background.</string>
+    <string name="permission_notification_action">Enable notifications</string>
+    <string name="permission_fullscreen_title">Full-screen call alerts are off</string>
+    <string name="permission_fullscreen_message">Incoming calls may only appear as a banner when the screen is locked.</string>
+
+    <!-- In-call screen -->
+    <string name="call_decline">Decline</string>
+    <string name="call_accept">Answer</string>
+    <string name="call_muted">Muted</string>
+    <string name="call_mute">Mute</string>
+    <string name="call_keypad">Keypad</string>
+    <string name="call_hangup">Hang up</string>
+    <string name="call_mic_missing">Microphone permission missing, the other party can\'t hear you</string>
+    <string name="call_failed">Call failed</string>
+    <string name="call_event_busy">In a call, cannot dial a new number</string>
+    <string name="call_event_bluetooth_permission">Bluetooth permission is required for Bluetooth calls, please grant it in system settings</string>
+    <string name="call_event_route_missing">No %1$s device available</string>
+    <string name="call_event_route_failed">Failed to switch audio device</string>
+    <string name="call_event_second_call">New incoming call automatically declined</string>
+
+    <!-- Audio routes -->
+    <string name="route_earpiece">Earpiece</string>
+    <string name="route_speaker">Speaker</string>
+    <string name="route_bluetooth">Bluetooth</string>
+    <string name="route_headset">Headset</string>
+
+    <!-- Call history -->
+    <string name="history_title">Call history</string>
+    <string name="history_empty_title">No call history</string>
+    <string name="history_empty_message">Outgoing and incoming calls will appear here</string>
+    <string name="history_delete_title">Delete this entry?</string>
+    <string name="history_clear_title">Clear call history?</string>
+    <plurals name="history_clear_message">
+        <item quantity="one">This will delete 1 entry</item>
+        <item quantity="other">This will delete all %1$d entries</item>
+    </plurals>
+    <string name="history_deleted">Deleted %1$s</string>
+    <string name="history_undo">Undo</string>
+    <string name="history_redial">Call back</string>
+    <string name="history_direction_incoming">Incoming</string>
+    <string name="history_direction_outgoing">Outgoing</string>
+    <string name="history_direction_missed">Missed</string>
+    <string name="history_duration_minutes">%1$dm %2$ds</string>
+    <string name="history_duration_seconds">%1$ds</string>
+    <string name="history_today">Today</string>
+    <string name="history_yesterday">Yesterday</string>
+    <string name="history_day_before_yesterday">Day before yesterday</string>
+    <string name="history_date_format">MMM d, yyyy</string>
+
+    <!-- Account -->
+    <string name="account_title">Account</string>
+    <string name="account_diagnostics">Diagnostics</string>
+    <string name="account_field_domain">Domain</string>
+    <string name="account_field_domain_hint">e.g. sip.example.com</string>
+    <string name="account_field_proxy">Proxy (optional)</string>
+    <string name="account_field_proxy_hint">Leave empty to use the domain; host:port supported</string>
+    <string name="account_field_username">Username</string>
+    <string name="account_field_password">Password</string>
+    <string name="account_password_show">Show</string>
+    <string name="account_password_hide">Hide</string>
+    <string name="account_advanced">Advanced</string>
+    <string name="account_transport">Transport</string>
+    <string name="account_port">Port</string>
+    <string name="account_port_hint">Default 5060</string>
+    <string name="account_port_hint_tls">Default 5061</string>
+    <string name="account_register_expires">Registration expiry (seconds)</string>
+    <string name="account_stun_desc">For NAT traversal</string>
+    <string name="account_stun_server">STUN server</string>
+    <string name="account_clear">Clear account</string>
+    <string name="account_clear_title">Clear account?</string>
+    <string name="account_clear_message">The account will be unregistered and removed from this device</string>
+    <string name="account_save">Save and register</string>
+    <string name="account_saving">Saving…</string>
+    <string name="account_register_success">Registered successfully</string>
+    <string name="account_register_failed">Registration failed, see the status card above</string>
+    <string name="account_retry_register">Retry registration</string>
+    <string name="account_network_restricted">The system blocked network access (EPERM). Allow Sipoe to access the network in system settings; see the diagnostics page.</string>
+    <string name="account_discard_title">Discard unsaved changes?</string>
+    <string name="account_discard_message">Your input will not be saved</string>
+    <string name="account_discard_confirm">Discard</string>
+    <string name="account_discard_keep">Keep editing</string>
+    <string name="account_save_error_storage">Failed to save account: password storage error. Please retry or restart the app.</string>
+    <string name="account_save_error">Save failed: %1$s</string>
+
+    <!-- Validation -->
+    <string name="validation_domain_required">Please enter a domain</string>
+    <string name="validation_domain_space">Domain cannot contain spaces</string>
+    <string name="validation_username_required">Please enter a username</string>
+    <string name="validation_username_at">Username must not contain @; put the domain in the domain field</string>
+    <string name="validation_username_space">Username cannot contain spaces</string>
+    <string name="validation_password_required">Please enter a password</string>
+    <string name="validation_proxy_invalid">Invalid proxy address</string>
+    <string name="validation_port_range">Port must be between 1 and 65535</string>
+    <string name="validation_expires_range">Registration expiry must be between 60 and 3600 seconds</string>
+
+    <!-- Registration / call errors -->
+    <string name="error_auth_failed">Authentication failed, check your username and password</string>
+    <string name="error_account_not_found">Account not found on the server</string>
+    <string name="error_server_timeout">No response from the server, check the network and proxy address</string>
+    <string name="error_server_internal">Server internal error</string>
+    <string name="error_bad_gateway">Bad gateway</string>
+    <string name="error_service_unavailable">Service temporarily unavailable, please try again later</string>
+    <string name="error_service_down">Service unavailable</string>
+    <string name="error_proxy_auth">Proxy authentication required</string>
+    <string name="error_dns">Cannot resolve the server address</string>
+    <string name="error_io">Network connection failed</string>
+    <string name="error_unreachable">Network unreachable</string>
+    <string name="error_transport">Network connection error</string>
+    <string name="error_registration_failed">Registration failed, check the server address and account settings</string>
+    <string name="error_busy">Busy</string>
+    <string name="error_declined">Call declined</string>
+    <string name="error_number_not_found">Number not found</string>
+    <string name="error_call_timeout">Call timed out</string>
+    <string name="error_forbidden">Call forbidden</string>
+    <string name="error_unauthorized">Authentication failed</string>
+
+    <!-- SIP core -->
+    <string name="sip_core_start_failed">Failed to start the SIP core: %1$s</string>
+    <string name="sip_account_incomplete">Incomplete account information</string>
+    <string name="sip_identity_invalid">Invalid account address: %1$s</string>
+    <string name="sip_server_invalid">Invalid server address: %1$s</string>
+
+    <!-- Diagnostics -->
+    <string name="diag_title">Diagnostics</string>
+    <string name="diag_copied">Diagnostics copied</string>
+    <string name="diag_account">Account</string>
+    <string name="diag_core">Core</string>
+    <string name="diag_self_test">Network self-test</string>
+    <string name="diag_self_test_running">Network self-test (running…)</string>
+    <string name="diag_self_test_idle">Not run</string>
+    <string name="diag_register_again">Re-register</string>
+    <string name="diag_run_self_test">Run self-test</string>
+    <string name="diag_refresh">Refresh</string>
+    <plurals name="diag_log_count">
+        <item quantity="one">%1$d log line (newest first)</item>
+        <item quantity="other">%1$d log lines (newest first)</item>
+    </plurals>
+    <string name="diag_account_not_saved">Not saved</string>
+    <string name="diag_line_address">Address: %1$s</string>
+    <string name="diag_line_server">Server: %1$s</string>
+    <string name="diag_line_transport">Transport: %1$s Expires: %2$ds</string>
+    <string name="diag_line_stun">STUN: %1$s</string>
+    <string name="diag_stun_off">Off</string>
+    <string name="diag_line_registration">Registration: %1$s</string>
+    <string name="diag_line_error">Error: %1$s</string>
+    <string name="diag_line_identity">Identity: %1$s</string>
+    <string name="diag_clip_label">Sipoe diagnostics report</string>
+    <string name="diag_restricted_title">The system blocked network access (EPERM)</string>
+    <string name="diag_restricted_step_1">1. Settings → Apps → Sipoe → Network access: allow Wi-Fi and mobile data</string>
+    <string name="diag_restricted_step_2">2. Security center → Network assistant/Firewall: allow Sipoe</string>
+    <string name="diag_restricted_step_3">3. Per-app rules in VPN/proxy apps: include Sipoe, or disable \"block apps not selected\"</string>
+    <string name="diag_restricted_step_4">4. Remove battery/background restrictions for the app and retry</string>
+    <string name="diag_state_started">Started</string>
+    <string name="diag_state_stopped">Not started</string>
+    <string name="diag_none">None</string>
+    <string name="diag_core_transports">Ports: udp=%1$s tcp=%2$s tls=%3$s</string>
+    <string name="diag_core_reachable">Network reachable: %1$s</string>
+    <string name="diag_core_default_account">Default account: %1$s</string>
+    <string name="diag_core_registration">Registration state: %1$s</string>
+    <string name="diag_core_version">Version: %1$s (%2$d)</string>
+
+    <!-- Network self-test -->
+    <string name="selftest_dns_ok">DNS lookup: %1$s</string>
+    <string name="selftest_dns_failed">DNS lookup failed: %1$s</string>
+    <string name="selftest_bind_random_ok">Local UDP bind (random port): OK</string>
+    <string name="selftest_bind_random_failed">Local UDP bind (random port) failed: %1$s</string>
+    <string name="selftest_bind_5060_ok">Local UDP bind (5060): OK</string>
+    <string name="selftest_bind_5060_failed">Local UDP bind (5060) failed: %1$s</string>
+    <string name="selftest_probe_ok">UDP probe %1$s:%2$d: response received → %3$s</string>
+    <string name="selftest_probe_timeout">UDP probe (%1$s:%2$d): sent, no response within %3$ds (the server may ignore OPTIONS, or it was dropped upstream)</string>
+    <string name="selftest_probe_failed">UDP probe failed (%1$s:%2$d): %3$s</string>
+    <string name="selftest_restricted">Conclusion: the system blocked network access (EPERM), REGISTER cannot be sent</string>
+
+    <!-- Diagnostics report -->
+    <string name="diag_report_title">=== Sipoe diagnostics report ===</string>
+    <string name="diag_report_time">Time: %1$s</string>
+    <string name="diag_report_section_account">--- Account ---</string>
+    <string name="diag_report_section_registration">--- Registration ---</string>
+    <string name="diag_report_section_core">--- Core ---</string>
+    <string name="diag_report_section_self_test">--- Network self-test ---</string>
+    <string name="diag_report_section_logs">--- Logs ---</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_desc">App display language</string>
+    <string name="settings_language_system">System default</string>
+    <string name="settings_language_zh">简体中文</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_account">Account</string>
+    <string name="settings_diagnostics">Diagnostics</string>
+    <string name="settings_version">Version %1$s</string>
+</resources>

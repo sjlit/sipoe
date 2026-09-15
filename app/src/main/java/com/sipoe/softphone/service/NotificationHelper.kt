@@ -12,6 +12,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.Person
 import com.sipoe.softphone.MainActivity
 import com.sipoe.softphone.R
+import com.sipoe.softphone.sip.CallStatus
 import com.sipoe.softphone.sip.CallUiState
 import com.sipoe.softphone.sip.SipRegistrationState
 import com.sipoe.softphone.sip.displayLabelRes
@@ -58,22 +59,39 @@ object NotificationHelper {
         context: Context,
         state: SipRegistrationState,
         call: CallUiState? = null,
+        hangupIntent: PendingIntent? = null,
     ): Notification {
-        val text = if (call != null) {
-            "${context.getString(call.displayLabelRes)} · ${call.number}"
-        } else {
-            context.getString(state.status.labelRes)
+        val activeCall = call?.takeIf {
+            it.status == CallStatus.Connecting ||
+                it.status == CallStatus.Connected ||
+                it.status == CallStatus.Ending
         }
-        return NotificationCompat.Builder(context, CHANNEL_STATUS)
+        val builder = NotificationCompat.Builder(context, CHANNEL_STATUS)
             .setSmallIcon(R.drawable.ic_stat_sip)
-            .setContentTitle(context.getString(R.string.app_name))
-            .setContentText(text)
             .setOngoing(true)
             .setSilent(true)
             .setShowWhen(false)
-            .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setContentIntent(openAppIntent(context))
-            .build()
+        if (activeCall != null && hangupIntent != null) {
+            val person = Person.Builder().setName(activeCall.number).build()
+            builder
+                .setStyle(NotificationCompat.CallStyle.forOngoingCall(person, hangupIntent))
+                .setContentTitle(activeCall.number)
+                .setContentText(context.getString(activeCall.displayLabelRes))
+                .setCategory(NotificationCompat.CATEGORY_CALL)
+        } else {
+            builder
+                .setContentTitle(context.getString(R.string.app_name))
+                .setContentText(
+                    if (call != null) {
+                        "${context.getString(call.displayLabelRes)} · ${call.number}"
+                    } else {
+                        context.getString(state.status.labelRes)
+                    },
+                )
+                .setCategory(NotificationCompat.CATEGORY_SERVICE)
+        }
+        return builder.build()
     }
 
     fun showIncomingCall(

@@ -1,6 +1,8 @@
 package com.sipoe.softphone.ui.history
 
+import android.content.res.Resources
 import android.view.HapticFeedbackConstants
+import androidx.annotation.StringRes
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -28,6 +30,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -37,13 +43,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -53,11 +63,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sipoe.softphone.R
 import com.sipoe.softphone.data.CallLogDirection
 import com.sipoe.softphone.data.CallLogEntry
+import com.sipoe.softphone.sip.RegistrationStatus
+import com.sipoe.softphone.sip.SipCoreManager
 import com.sipoe.softphone.ui.theme.SipoeTheme
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,21 +79,54 @@ fun HistoryScreen(
     viewModel: HistoryViewModel = viewModel(),
 ) {
     val entries by viewModel.entries.collectAsStateWithLifecycle()
+    val registration by SipCoreManager.registration.collectAsStateWithLifecycle()
     var pendingDelete by remember { mutableStateOf<CallLogEntry?>(null) }
     var showClearDialog by rememberSaveable { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val resources = LocalResources.current
+
+    fun redial(entry: CallLogEntry) {
+        if (registration.status != RegistrationStatus.Registered) {
+            scope.launch {
+                snackbarHostState.showSnackbar(resources.getString(R.string.dialer_not_registered))
+            }
+        }
+        viewModel.redial(entry)
+    }
+
+    fun deleteWithUndo(entry: CallLogEntry) {
+        viewModel.remove(entry)
+        scope.launch {
+            val result = snackbarHostState.showSnackbar(
+                message = resources.getString(R.string.history_deleted, entry.number),
+                actionLabel = resources.getString(R.string.history_undo),
+                duration = SnackbarDuration.Short,
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                viewModel.restore(entry)
+            }
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("通话记录") },
+                title = { Text(stringResource(R.string.history_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.common_back),
+                        )
                     }
                 },
                 actions = {
                     if (entries.isNotEmpty()) {
-                        TextButton(onClick = { showClearDialog = true }) { Text("清空") }
+                        TextButton(onClick = { showClearDialog = true }) {
+                            Text(stringResource(R.string.common_clear))
+                        }
                     }
                 },
             )
@@ -93,7 +139,9 @@ fun HistoryScreen(
                     .padding(padding),
             )
         } else {
-            val groups = remember(entries) { entries.groupBy { dayLabel(it.timestamp) } }
+            val groups = remember(entries, resources) {
+                entries.groupBy { dayLabel(resources, it.timestamp) }
+            }
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -104,12 +152,12 @@ fun HistoryScreen(
                     item(key = "header-$label") { DayHeader(label) }
                     items(dayEntries, key = { it.id }) { entry ->
                         SwipeToDeleteRow(
-                            onDelete = { viewModel.remove(entry) },
+                            onDelete = { deleteWithUndo(entry) },
                         ) {
                             CallLogRow(
                                 entry = entry,
-                                onClick = { viewModel.redial(entry) },
-                                onRedial = { viewModel.redial(entry) },
+                                onClick = { redial(entry) },
+                                onRedial = { redial(entry) },
                                 onLongClick = { pendingDelete = entry },
                             )
                             HorizontalDivider(
@@ -126,20 +174,25 @@ fun HistoryScreen(
     pendingDelete?.let { entry ->
         AlertDialog(
             onDismissRequest = { pendingDelete = null },
-            title = { Text("删除这条记录?") },
+            title = { Text(stringResource(R.string.history_delete_title)) },
             text = { Text(entry.number) },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        viewModel.remove(entry)
+                        deleteWithUndo(entry)
                         pendingDelete = null
                     },
                 ) {
-                    Text("删除", color = MaterialTheme.colorScheme.error)
+                    Text(
+                        text = stringResource(R.string.common_delete),
+                        color = MaterialTheme.colorScheme.error,
+                    )
                 }
             },
             dismissButton = {
-                TextButton(onClick = { pendingDelete = null }) { Text("取消") }
+                TextButton(onClick = { pendingDelete = null }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
             },
         )
     }
@@ -147,8 +200,8 @@ fun HistoryScreen(
     if (showClearDialog) {
         AlertDialog(
             onDismissRequest = { showClearDialog = false },
-            title = { Text("清空通话记录?") },
-            text = { Text("将删除全部 ${entries.size} 条记录") },
+            title = { Text(stringResource(R.string.history_clear_title)) },
+            text = { Text(pluralStringResource(R.plurals.history_clear_message, entries.size, entries.size)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -156,11 +209,16 @@ fun HistoryScreen(
                         showClearDialog = false
                     },
                 ) {
-                    Text("清空", color = MaterialTheme.colorScheme.error)
+                    Text(
+                        text = stringResource(R.string.common_clear),
+                        color = MaterialTheme.colorScheme.error,
+                    )
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showClearDialog = false }) { Text("取消") }
+                TextButton(onClick = { showClearDialog = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
             },
         )
     }
@@ -190,7 +248,7 @@ private fun SwipeToDeleteRow(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_delete),
-                    contentDescription = "删除",
+                    contentDescription = stringResource(R.string.common_delete),
                     tint = MaterialTheme.colorScheme.onErrorContainer,
                 )
             }
@@ -231,13 +289,13 @@ private fun EmptyHistory(modifier: Modifier = Modifier) {
             )
             Spacer(Modifier.height(12.dp))
             Text(
-                text = "暂无通话记录",
+                text = stringResource(R.string.history_empty_title),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                text = "拨出或接听电话后会显示在这里",
+                text = stringResource(R.string.history_empty_message),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             )
@@ -254,6 +312,7 @@ private fun CallLogRow(
     onLongClick: () -> Unit,
 ) {
     val sipoe = SipoeTheme.colors
+    val resources = LocalResources.current
     val (symbol, color) = when (entry.direction) {
         CallLogDirection.Outgoing -> "↗" to MaterialTheme.colorScheme.primary
         CallLogDirection.Incoming -> "↙" to sipoe.accept
@@ -290,10 +349,10 @@ private fun CallLogRow(
             )
             Text(
                 text = buildString {
-                    append(directionLabel(entry.direction))
+                    append(stringResource(entry.direction.labelRes))
                     if (entry.durationSeconds > 0) {
                         append(" · ")
-                        append(formatDuration(entry.durationSeconds))
+                        append(formatDuration(resources, entry.durationSeconds))
                     }
                 },
                 style = MaterialTheme.typography.bodySmall,
@@ -309,21 +368,27 @@ private fun CallLogRow(
         IconButton(onClick = onRedial) {
             Icon(
                 painter = painterResource(R.drawable.ic_phone),
-                contentDescription = "回拨",
+                contentDescription = stringResource(R.string.history_redial),
                 tint = MaterialTheme.colorScheme.primary,
             )
         }
     }
 }
 
-private fun directionLabel(direction: CallLogDirection): String = when (direction) {
-    CallLogDirection.Incoming -> "呼入"
-    CallLogDirection.Outgoing -> "呼出"
-    CallLogDirection.Missed -> "未接"
-}
+@get:StringRes
+private val CallLogDirection.labelRes: Int
+    get() = when (this) {
+        CallLogDirection.Incoming -> R.string.history_direction_incoming
+        CallLogDirection.Outgoing -> R.string.history_direction_outgoing
+        CallLogDirection.Missed -> R.string.history_direction_missed
+    }
 
-private fun formatDuration(seconds: Int): String =
-    if (seconds >= 60) "${seconds / 60}分${seconds % 60}秒" else "${seconds}秒"
+private fun formatDuration(resources: Resources, seconds: Int): String =
+    if (seconds >= 60) {
+        resources.getString(R.string.history_duration_minutes, seconds / 60, seconds % 60)
+    } else {
+        resources.getString(R.string.history_duration_seconds, seconds)
+    }
 
 private fun shortTime(timestamp: Long): String {
     val now = Calendar.getInstance()
@@ -334,27 +399,28 @@ private fun shortTime(timestamp: Long): String {
     return SimpleDateFormat(pattern, Locale.getDefault()).format(Date(timestamp))
 }
 
-private fun dayLabel(timestamp: Long): String {
+private fun dayLabel(resources: Resources, timestamp: Long): String {
     val now = Calendar.getInstance()
     val then = Calendar.getInstance().apply { timeInMillis = timestamp }
 
     val sameDay = now.get(Calendar.YEAR) == then.get(Calendar.YEAR) &&
         now.get(Calendar.DAY_OF_YEAR) == then.get(Calendar.DAY_OF_YEAR)
-    if (sameDay) return "今天"
+    if (sameDay) return resources.getString(R.string.history_today)
 
     val yesterday = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -1) }
     val isYesterday = yesterday.get(Calendar.YEAR) == then.get(Calendar.YEAR) &&
         yesterday.get(Calendar.DAY_OF_YEAR) == then.get(Calendar.DAY_OF_YEAR)
-    if (isYesterday) return "昨天"
+    if (isYesterday) return resources.getString(R.string.history_yesterday)
 
-    val tomorrow = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -2) }
-    val beforeYesterday = tomorrow.get(Calendar.YEAR) == then.get(Calendar.YEAR) &&
-        tomorrow.get(Calendar.DAY_OF_YEAR) == then.get(Calendar.DAY_OF_YEAR)
-    if (beforeYesterday) return "前天"
+    val beforeYesterday = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -2) }
+    val isBeforeYesterday = beforeYesterday.get(Calendar.YEAR) == then.get(Calendar.YEAR) &&
+        beforeYesterday.get(Calendar.DAY_OF_YEAR) == then.get(Calendar.DAY_OF_YEAR)
+    if (isBeforeYesterday) return resources.getString(R.string.history_day_before_yesterday)
 
     if (now.timeInMillis - timestamp < 7L * 24 * 60 * 60 * 1000) {
-        return SimpleDateFormat("EEEE", Locale.CHINA).format(Date(timestamp))
+        return SimpleDateFormat("EEEE", Locale.getDefault()).format(Date(timestamp))
     }
 
-    return SimpleDateFormat("yyyy年MM月dd日", Locale.getDefault()).format(Date(timestamp))
+    val pattern = resources.getString(R.string.history_date_format)
+    return SimpleDateFormat(pattern, Locale.getDefault()).format(Date(timestamp))
 }

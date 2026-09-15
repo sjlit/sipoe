@@ -7,8 +7,12 @@ import android.os.Build
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -36,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
@@ -51,7 +57,10 @@ import com.sipoe.softphone.sip.AudioRoute
 import com.sipoe.softphone.sip.CallController
 import com.sipoe.softphone.sip.CallStatus
 import com.sipoe.softphone.sip.displayLabelRes
+import com.sipoe.softphone.sip.labelRes
 import com.sipoe.softphone.ui.components.Dialpad
+import com.sipoe.softphone.ui.permissions.hasMicPermission
+import com.sipoe.softphone.ui.permissions.rememberResumedFlag
 import com.sipoe.softphone.ui.theme.SipoeTheme
 import kotlinx.coroutines.delay
 
@@ -66,8 +75,15 @@ fun InCallScreen(onFinished: () -> Unit) {
 
     val state = call ?: return
     var showKeypad by rememberSaveable { mutableStateOf(false) }
+    val ending = state.status == CallStatus.Ending
+    val endHaptic = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        HapticFeedbackConstants.REJECT
+    } else {
+        HapticFeedbackConstants.LONG_PRESS
+    }
     val view = LocalView.current
     val sipoe = SipoeTheme.colors
+    val micGranted = rememberResumedFlag { hasMicPermission(context) }
 
     BackHandler {
         context.findActivity()?.moveTaskToBack(true)
@@ -140,6 +156,16 @@ fun InCallScreen(onFinished: () -> Unit) {
             )
         }
 
+        if (!micGranted) {
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text = stringResource(R.string.call_mic_missing),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+                textAlign = TextAlign.Center,
+            )
+        }
+
         Spacer(Modifier.weight(1f))
 
         if (showKeypad && state.status == CallStatus.Connected) {
@@ -153,38 +179,46 @@ fun InCallScreen(onFinished: () -> Unit) {
         if (state.status == CallStatus.Incoming) {
             Row(horizontalArrangement = Arrangement.spacedBy(48.dp)) {
                 CallAction(
-                    label = "拒接",
+                    label = stringResource(R.string.call_decline),
                     iconRes = R.drawable.ic_call_end,
                     containerColor = sipoe.hangup,
                     contentColor = sipoe.onHangup,
+                    busy = ending,
+                    haptic = endHaptic,
                     onClick = { CallController.decline() },
                 )
                 CallAction(
-                    label = "接听",
+                    label = stringResource(R.string.call_accept),
                     iconRes = R.drawable.ic_phone,
                     containerColor = sipoe.accept,
                     contentColor = sipoe.onAccept,
+                    enabled = !ending,
                     onClick = { CallController.accept() },
                 )
             }
         } else {
             Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
                 CallToggle(
-                    label = if (state.isMuted) "已静音" else "静音",
+                    label = stringResource(
+                        if (state.isMuted) R.string.call_muted else R.string.call_mute,
+                    ),
                     iconRes = if (state.isMuted) R.drawable.ic_mic_off else R.drawable.ic_mic,
                     active = state.isMuted,
+                    enabled = !ending,
                     onClick = { CallController.toggleMute() },
                 )
                 CallToggle(
-                    label = routeLabel(state.currentRoute),
+                    label = stringResource(state.currentRoute.labelRes),
                     iconRes = routeIcon(state.currentRoute),
                     active = state.currentRoute != AudioRoute.Earpiece,
+                    enabled = !ending,
                     onClick = { CallController.cycleRoute() },
                 )
                 CallToggle(
-                    label = "键盘",
+                    label = stringResource(R.string.call_keypad),
                     iconRes = R.drawable.ic_dialpad,
                     active = showKeypad,
+                    enabled = !ending,
                     onClick = { showKeypad = !showKeypad },
                 )
             }
@@ -192,10 +226,12 @@ fun InCallScreen(onFinished: () -> Unit) {
             Spacer(Modifier.height(28.dp))
 
             CallAction(
-                label = "挂断",
+                label = stringResource(R.string.call_hangup),
                 iconRes = R.drawable.ic_call_end,
                 containerColor = sipoe.hangup,
                 contentColor = sipoe.onHangup,
+                busy = ending,
+                haptic = endHaptic,
                 onClick = { CallController.hangup() },
             )
         }
@@ -212,25 +248,55 @@ private fun CallAction(
     containerColor: Color,
     contentColor: Color,
     size: Dp = 72.dp,
+    busy: Boolean = false,
+    enabled: Boolean = true,
+    haptic: Int = HapticFeedbackConstants.KEYBOARD_TAP,
 ) {
     val view = LocalView.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed && enabled && !busy) 0.9f else 1f,
+        label = "callActionScale",
+    )
     Box(
         modifier = Modifier
             .size(size)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+                alpha = when {
+                    busy -> 0.8f
+                    !enabled -> 0.5f
+                    else -> 1f
+                }
+            }
             .clip(CircleShape)
             .background(containerColor)
-            .clickable {
-                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = LocalIndication.current,
+                enabled = enabled && !busy,
+            ) {
+                view.performHapticFeedback(haptic)
                 onClick()
             },
         contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            painter = painterResource(iconRes),
-            contentDescription = label,
-            tint = contentColor,
-            modifier = Modifier.size(30.dp),
-        )
+        if (busy) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(26.dp),
+                color = contentColor,
+                strokeWidth = 2.5.dp,
+            )
+        } else {
+            Icon(
+                painter = painterResource(iconRes),
+                contentDescription = label,
+                tint = contentColor,
+                modifier = Modifier.size(30.dp),
+            )
+        }
     }
 }
 
@@ -240,6 +306,7 @@ private fun CallToggle(
     @DrawableRes iconRes: Int,
     active: Boolean,
     onClick: () -> Unit,
+    enabled: Boolean = true,
 ) {
     val view = LocalView.current
     val container = if (active) {
@@ -256,9 +323,10 @@ private fun CallToggle(
         Box(
             modifier = Modifier
                 .size(64.dp)
+                .graphicsLayer { alpha = if (enabled) 1f else 0.5f }
                 .clip(CircleShape)
                 .background(container)
-                .clickable {
+                .clickable(enabled = enabled) {
                     view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                     onClick()
                 },
@@ -286,13 +354,6 @@ private fun routeIcon(route: AudioRoute): Int = when (route) {
     AudioRoute.Speaker -> R.drawable.ic_volume_up
     AudioRoute.Bluetooth -> R.drawable.ic_bluetooth
     AudioRoute.Headset -> R.drawable.ic_headset
-}
-
-private fun routeLabel(route: AudioRoute): String = when (route) {
-    AudioRoute.Earpiece -> "听筒"
-    AudioRoute.Speaker -> "免提"
-    AudioRoute.Bluetooth -> "蓝牙"
-    AudioRoute.Headset -> "耳机"
 }
 
 private tailrec fun Context.findActivity(): Activity? = when (this) {

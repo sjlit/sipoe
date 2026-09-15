@@ -1,6 +1,7 @@
 package com.sipoe.softphone.ui.diagnostics
 
 import android.content.ClipData
+import android.content.res.Resources
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -34,11 +35,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.sipoe.softphone.R
 import com.sipoe.softphone.data.AccountSettings
 import com.sipoe.softphone.diag.DiagLog
 import com.sipoe.softphone.diag.NetworkSelfTest
@@ -62,6 +67,7 @@ fun DiagnosticsScreen(
     val registration by accountViewModel.registration.collectAsStateWithLifecycle()
     val entries by DiagLog.entries.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val resources = LocalResources.current
     val clipboard = LocalClipboard.current
 
     val account = saved
@@ -77,7 +83,7 @@ fun DiagnosticsScreen(
         selfTestRunning = true
         scope.launch {
             selfTest = withContext(Dispatchers.IO) {
-                NetworkSelfTest.run(current.serverHost, current.serverPort)
+                NetworkSelfTest.run(context, current.serverHost, current.serverPort)
             }
             selfTestRunning = false
         }
@@ -94,31 +100,55 @@ fun DiagnosticsScreen(
     }
     val accountLines = buildList {
         if (account == null) {
-            add("未保存")
+            add(stringResource(R.string.diag_account_not_saved))
         } else {
-            add("地址: ${account.identityUri}")
-            add("服务器: ${account.serverAddress}")
-            add("传输: ${account.transport.label} 有效期: ${account.registerExpires}s")
-            add("STUN: ${if (account.stunEnabled) account.stunServer else "关闭"}")
+            add(stringResource(R.string.diag_line_address, account.identityUri))
+            add(stringResource(R.string.diag_line_server, account.serverAddress))
+            add(
+                stringResource(
+                    R.string.diag_line_transport,
+                    account.transport.label,
+                    account.registerExpires,
+                ),
+            )
+            add(
+                stringResource(
+                    R.string.diag_line_stun,
+                    if (account.stunEnabled) {
+                        account.stunServer
+                    } else {
+                        stringResource(R.string.diag_stun_off)
+                    },
+                ),
+            )
         }
-        add("注册: ${registration.status}${registration.message?.let { " · $it" } ?: ""}")
-        registration.errorDetail?.let { add("错误: $it") }
-        registration.identity?.let { add("身份: $it") }
+        add(
+            stringResource(
+                R.string.diag_line_registration,
+                "${registration.status}${registration.message?.let { " · $it" } ?: ""}",
+            ),
+        )
+        registration.errorDetail?.let { add(stringResource(R.string.diag_line_error, it)) }
+        registration.identity?.let { add(stringResource(R.string.diag_line_identity, it)) }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("诊断信息") },
+                title = { Text(stringResource(R.string.diag_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.common_back),
+                        )
                     }
                 },
                 actions = {
                     TextButton(
                         onClick = {
                             val report = buildReport(
+                                resources = resources,
                                 account = account,
                                 registration = registration,
                                 coreSummary = coreSummary,
@@ -127,13 +157,22 @@ fun DiagnosticsScreen(
                             )
                             scope.launch {
                                 clipboard.setClipEntry(
-                                    ClipEntry(ClipData.newPlainText("Sipoe 诊断报告", report)),
+                                    ClipEntry(
+                                        ClipData.newPlainText(
+                                            resources.getString(R.string.diag_clip_label),
+                                            report,
+                                        ),
+                                    ),
                                 )
-                                Toast.makeText(context, "已复制诊断信息", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    R.string.diag_copied,
+                                    Toast.LENGTH_SHORT,
+                                ).show()
                             }
                         },
                     ) {
-                        Text("复制")
+                        Text(stringResource(R.string.common_copy))
                     }
                 },
             )
@@ -149,12 +188,18 @@ fun DiagnosticsScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                item { InfoCard("账号", accountLines) }
-                item { InfoCard("内核", coreSummary) }
+                item { InfoCard(stringResource(R.string.diag_account), accountLines) }
+                item { InfoCard(stringResource(R.string.diag_core), coreSummary) }
                 item {
                     InfoCard(
-                        title = if (selfTestRunning) "网络自检(进行中…)" else "网络自检",
-                        lines = selfTest?.lines ?: listOf("未运行"),
+                        title = stringResource(
+                            if (selfTestRunning) {
+                                R.string.diag_self_test_running
+                            } else {
+                                R.string.diag_self_test
+                            },
+                        ),
+                        lines = selfTest?.lines ?: listOf(stringResource(R.string.diag_self_test_idle)),
                     )
                 }
                 if (selfTest?.restricted == true || registration.networkRestricted) {
@@ -165,16 +210,22 @@ fun DiagnosticsScreen(
                         Button(
                             onClick = { SipCoreManager.refreshRegistration() },
                         ) {
-                            Text("重新注册")
+                            Text(stringResource(R.string.diag_register_again))
                         }
-                        TextButton(onClick = { runSelfTest() }) { Text("重新自检") }
-                        TextButton(onClick = { DiagLog.refresh() }) { Text("刷新") }
-                        TextButton(onClick = { DiagLog.clear() }) { Text("清空") }
+                        TextButton(onClick = { runSelfTest() }) {
+                            Text(stringResource(R.string.diag_run_self_test))
+                        }
+                        TextButton(onClick = { DiagLog.refresh() }) {
+                            Text(stringResource(R.string.diag_refresh))
+                        }
+                        TextButton(onClick = { DiagLog.clear() }) {
+                            Text(stringResource(R.string.common_clear))
+                        }
                     }
                 }
                 item {
                     Text(
-                        text = "日志 ${entries.size} 行(最新在上)",
+                        text = pluralStringResource(R.plurals.diag_log_count, entries.size, entries.size),
                         style = MaterialTheme.typography.titleSmall,
                     )
                 }
@@ -204,18 +255,18 @@ private fun RestrictionCard() {
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text(
-                text = "系统拦截了应用联网(EPERM)",
+                text = stringResource(R.string.diag_restricted_title),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onErrorContainer,
             )
             listOf(
-                "1. 设置 → 应用管理 → Sipoe → 联网控制/流量:允许 WiFi 和移动数据",
-                "2. 手机管家/安全中心 → 网络助手/防火墙:放行 Sipoe",
-                "3. VPN/代理类应用的分应用规则:勾选 Sipoe,或关闭\"禁止未选择应用联网\"",
-                "4. 关闭对该应用的省电/后台限制后重试",
-            ).forEach { line ->
+                R.string.diag_restricted_step_1,
+                R.string.diag_restricted_step_2,
+                R.string.diag_restricted_step_3,
+                R.string.diag_restricted_step_4,
+            ).forEach { lineRes ->
                 Text(
-                    text = line,
+                    text = stringResource(lineRes),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onErrorContainer,
                 )
@@ -240,18 +291,24 @@ private fun InfoCard(title: String, lines: List<String>) {
 }
 
 private fun buildReport(
+    resources: Resources,
     account: AccountSettings?,
     registration: SipRegistrationState,
     coreSummary: List<String>,
     selfTestLines: List<String>,
     logs: String,
 ): String = buildString {
-    appendLine("=== Sipoe 诊断报告 ===")
-    appendLine("时间: ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())}")
+    appendLine(resources.getString(R.string.diag_report_title))
+    appendLine(
+        resources.getString(
+            R.string.diag_report_time,
+            SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date()),
+        ),
+    )
     appendLine()
-    appendLine("--- 账号 ---")
+    appendLine(resources.getString(R.string.diag_report_section_account))
     if (account == null) {
-        appendLine("(未保存)")
+        appendLine(resources.getString(R.string.diag_account_not_saved))
     } else {
         appendLine("identity: ${account.identityUri}")
         appendLine("server: ${account.serverAddress}")
@@ -260,17 +317,17 @@ private fun buildReport(
         appendLine("stun: ${if (account.stunEnabled) account.stunServer else "off"}")
     }
     appendLine()
-    appendLine("--- 注册 ---")
+    appendLine(resources.getString(R.string.diag_report_section_registration))
     appendLine("status: ${registration.status}")
     appendLine("message: ${registration.message}")
     appendLine("detail: ${registration.errorDetail}")
     appendLine()
-    appendLine("--- 内核 ---")
+    appendLine(resources.getString(R.string.diag_report_section_core))
     coreSummary.forEach { appendLine(it) }
     appendLine()
-    appendLine("--- 网络自检 ---")
+    appendLine(resources.getString(R.string.diag_report_section_self_test))
     selfTestLines.forEach { appendLine(it) }
     appendLine()
-    appendLine("--- 日志 ---")
+    appendLine(resources.getString(R.string.diag_report_section_logs))
     append(logs)
 }

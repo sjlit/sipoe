@@ -1,5 +1,6 @@
 package com.sipoe.softphone.ui
 
+import android.widget.Toast
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -8,6 +9,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,6 +20,7 @@ import com.sipoe.softphone.ui.call.InCallScreen
 import com.sipoe.softphone.ui.diagnostics.DiagnosticsScreen
 import com.sipoe.softphone.ui.dialer.DialerScreen
 import com.sipoe.softphone.ui.history.HistoryScreen
+import com.sipoe.softphone.ui.settings.SettingsScreen
 
 object SipoeRoutes {
     const val DIALER = "dialer"
@@ -25,12 +28,20 @@ object SipoeRoutes {
     const val ACCOUNT = "account"
     const val CALL = "call"
     const val DIAGNOSTICS = "diagnostics"
+    const val SETTINGS = "settings"
 }
 
 @Composable
 fun SipoeNavHost() {
     val navController = rememberNavController()
     val activeCall by CallController.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        CallController.events.collect { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     LaunchedEffect(activeCall) {
         val currentRoute = navController.currentBackStackEntry?.destination?.route
@@ -53,6 +64,7 @@ fun SipoeNavHost() {
             DialerScreen(
                 onOpenHistory = { navController.navigate(SipoeRoutes.HISTORY) },
                 onOpenAccount = { navController.navigate(SipoeRoutes.ACCOUNT) },
+                onOpenSettings = { navController.navigate(SipoeRoutes.SETTINGS) },
             )
         }
         composable(SipoeRoutes.HISTORY) {
@@ -66,6 +78,13 @@ fun SipoeNavHost() {
         }
         composable(SipoeRoutes.DIAGNOSTICS) {
             DiagnosticsScreen(onBack = { navController.popBackStack() })
+        }
+        composable(SipoeRoutes.SETTINGS) {
+            SettingsScreen(
+                onBack = { navController.popBackStack() },
+                onOpenAccount = { navController.navigate(SipoeRoutes.ACCOUNT) },
+                onOpenDiagnostics = { navController.navigate(SipoeRoutes.DIAGNOSTICS) },
+            )
         }
         composable(SipoeRoutes.CALL) {
             InCallScreen(

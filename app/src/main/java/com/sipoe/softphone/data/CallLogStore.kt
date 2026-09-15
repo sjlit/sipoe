@@ -33,6 +33,15 @@ class CallLogStore(private val context: Context) {
         }
     }
 
+    suspend fun restore(entry: CallLogEntry) {
+        context.callLogDataStore.edit { prefs ->
+            val updated = (decode(prefs[Keys.ENTRIES]).filterNot { it.id == entry.id } + entry)
+                .sortedByDescending { it.timestamp }
+                .take(MAX_ENTRIES)
+            prefs[Keys.ENTRIES] = json.encodeToString(updated)
+        }
+    }
+
     suspend fun clear() {
         context.callLogDataStore.edit { prefs ->
             prefs.remove(Keys.ENTRIES)

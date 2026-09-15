@@ -16,6 +16,227 @@
     <string name="call_status_connecting">呼叫中…</string>
     <string name="call_status_answering">接听中…</string>
     <string name="call_status_connected">通话中</string>
+    <string name="call_status_ending">正在挂断…</string>
     <string name="call_status_ended">已结束</string>
     <string name="call_status_error">呼叫失败</string>
+
+    <!-- 通用 -->
+    <string name="common_back">返回</string>
+    <string name="common_cancel">取消</string>
+    <string name="common_delete">删除</string>
+    <string name="common_clear">清空</string>
+    <string name="common_copy">复制</string>
+    <string name="common_paste">粘贴</string>
+    <string name="common_open_settings">去设置</string>
+
+    <!-- 拨号页 -->
+    <string name="dialer_history">通话记录</string>
+    <string name="dialer_settings">设置</string>
+    <string name="dialer_number_placeholder">输入号码</string>
+    <string name="dialer_number_menu_desc">号码,长按打开操作菜单</string>
+    <string name="dialer_open_menu">打开操作菜单</string>
+    <string name="dialer_paste_and_dial">粘贴并拨号</string>
+    <string name="dialer_backspace_desc">删除,长按清空</string>
+    <string name="dialer_call">拨号</string>
+    <string name="dialer_setup_title">尚未配置账号</string>
+    <string name="dialer_setup_message">填写 SIP 服务器、用户名和密码后即可拨打和接听电话。</string>
+    <string name="dialer_not_registered">当前未注册,呼叫可能失败</string>
+    <string name="dialer_copied">已复制号码</string>
+    <string name="dialer_clipboard_empty">剪贴板没有可用号码</string>
+
+    <!-- 权限提示 -->
+    <string name="permission_mic_title">未授予麦克风权限</string>
+    <string name="permission_mic_message">通话将没有声音,对方听不到你说话。</string>
+    <string name="permission_mic_action">授权麦克风</string>
+    <string name="permission_notification_title">通知未开启</string>
+    <string name="permission_notification_message">息屏或后台时来电将无法提醒,可能错过电话。</string>
+    <string name="permission_notification_action">开启通知</string>
+    <string name="permission_fullscreen_title">来电全屏提醒未开启</string>
+    <string name="permission_fullscreen_message">锁屏时来电可能只显示为横幅通知。</string>
+
+    <!-- 通话页 -->
+    <string name="call_decline">拒接</string>
+    <string name="call_accept">接听</string>
+    <string name="call_muted">已静音</string>
+    <string name="call_mute">静音</string>
+    <string name="call_keypad">键盘</string>
+    <string name="call_hangup">挂断</string>
+    <string name="call_mic_missing">未授予麦克风权限,对方听不到声音</string>
+    <string name="call_failed">呼叫失败</string>
+    <string name="call_event_busy">正在通话中,无法拨打新号码</string>
+    <string name="call_event_bluetooth_permission">需要蓝牙权限才能切换到蓝牙通话,请在系统设置中授予</string>
+    <string name="call_event_route_missing">未找到可用的%1$s设备</string>
+    <string name="call_event_route_failed">切换音频设备失败</string>
+    <string name="call_event_second_call">有新的来电,已自动拒接</string>
+
+    <!-- 音频路由 -->
+    <string name="route_earpiece">听筒</string>
+    <string name="route_speaker">免提</string>
+    <string name="route_bluetooth">蓝牙</string>
+    <string name="route_headset">耳机</string>
+
+    <!-- 通话记录 -->
+    <string name="history_title">通话记录</string>
+    <string name="history_empty_title">暂无通话记录</string>
+    <string name="history_empty_message">拨出或接听电话后会显示在这里</string>
+    <string name="history_delete_title">删除这条记录?</string>
+    <string name="history_clear_title">清空通话记录?</string>
+    <plurals name="history_clear_message">
+        <item quantity="other">将删除全部 %1$d 条记录</item>
+    </plurals>
+    <string name="history_deleted">已删除 %1$s</string>
+    <string name="history_undo">撤销</string>
+    <string name="history_redial">回拨</string>
+    <string name="history_direction_incoming">呼入</string>
+    <string name="history_direction_outgoing">呼出</string>
+    <string name="history_direction_missed">未接</string>
+    <string name="history_duration_minutes">%1$d分%2$d秒</string>
+    <string name="history_duration_seconds">%1$d秒</string>
+    <string name="history_today">今天</string>
+    <string name="history_yesterday">昨天</string>
+    <string name="history_day_before_yesterday">前天</string>
+    <string name="history_date_format">yyyy年MM月dd日</string>
+
+    <!-- 账号页 -->
+    <string name="account_title">账号</string>
+    <string name="account_diagnostics">诊断</string>
+    <string name="account_field_domain">域</string>
+    <string name="account_field_domain_hint">例如 sip.example.com</string>
+    <string name="account_field_proxy">代理(可选)</string>
+    <string name="account_field_proxy_hint">留空则使用域,支持 host:port</string>
+    <string name="account_field_username">用户名</string>
+    <string name="account_field_password">密码</string>
+    <string name="account_password_show">显示</string>
+    <string name="account_password_hide">隐藏</string>
+    <string name="account_advanced">高级设置</string>
+    <string name="account_transport">传输协议</string>
+    <string name="account_port">端口</string>
+    <string name="account_port_hint">默认 5060</string>
+    <string name="account_port_hint_tls">默认 5061</string>
+    <string name="account_register_expires">注册有效期(秒)</string>
+    <string name="account_stun_desc">用于 NAT 穿透</string>
+    <string name="account_stun_server">STUN 服务器</string>
+    <string name="account_clear">清空账号</string>
+    <string name="account_clear_title">清空账号?</string>
+    <string name="account_clear_message">将注销并删除本机保存的账号信息</string>
+    <string name="account_save">保存并注册</string>
+    <string name="account_saving">保存中…</string>
+    <string name="account_register_success">注册成功</string>
+    <string name="account_register_failed">注册失败,详情见上方状态卡片</string>
+    <string name="account_retry_register">重试注册</string>
+    <string name="account_network_restricted">系统拦截了应用联网(EPERM),请到系统设置允许 Sipoe 联网;见"诊断"页指引</string>
+    <string name="account_discard_title">放弃未保存的修改?</string>
+    <string name="account_discard_message">返回后本次输入不会保存</string>
+    <string name="account_discard_confirm">放弃</string>
+    <string name="account_discard_keep">继续编辑</string>
+    <string name="account_save_error_storage">账号保存异常:密码存储失败,请重试或重启应用</string>
+    <string name="account_save_error">保存失败:%1$s</string>
+
+    <!-- 表单校验 -->
+    <string name="validation_domain_required">请填写域</string>
+    <string name="validation_domain_space">域不能包含空格</string>
+    <string name="validation_username_required">请填写用户名</string>
+    <string name="validation_username_at">用户名请勿包含 @,域请填在域名段</string>
+    <string name="validation_username_space">用户名不能包含空格</string>
+    <string name="validation_password_required">请填写密码</string>
+    <string name="validation_proxy_invalid">代理地址不合法</string>
+    <string name="validation_port_range">端口需在 1–65535 之间</string>
+    <string name="validation_expires_range">注册有效期需在 60–3600 秒之间</string>
+
+    <!-- 注册/呼叫错误 -->
+    <string name="error_auth_failed">认证失败,请检查用户名和密码</string>
+    <string name="error_account_not_found">服务器未找到该账号</string>
+    <string name="error_server_timeout">服务器无响应,请检查网络和代理地址</string>
+    <string name="error_server_internal">服务器内部错误</string>
+    <string name="error_bad_gateway">网关错误</string>
+    <string name="error_service_unavailable">服务暂不可用,请稍后重试</string>
+    <string name="error_service_down">服务不可用</string>
+    <string name="error_proxy_auth">代理要求认证</string>
+    <string name="error_dns">无法解析服务器地址</string>
+    <string name="error_io">网络连接失败</string>
+    <string name="error_unreachable">网络不可达</string>
+    <string name="error_transport">网络连接异常</string>
+    <string name="error_registration_failed">注册失败,请检查服务器地址与账号配置</string>
+    <string name="error_busy">对方忙</string>
+    <string name="error_declined">对方已拒接</string>
+    <string name="error_number_not_found">号码不存在</string>
+    <string name="error_call_timeout">呼叫超时</string>
+    <string name="error_forbidden">呼叫被拒绝</string>
+    <string name="error_unauthorized">认证失败</string>
+
+    <!-- SIP 内核 -->
+    <string name="sip_core_start_failed">SIP 内核启动失败:%1$s</string>
+    <string name="sip_account_incomplete">账号信息不完整</string>
+    <string name="sip_identity_invalid">账号地址格式不正确:%1$s</string>
+    <string name="sip_server_invalid">服务器地址格式不正确:%1$s</string>
+
+    <!-- 诊断页 -->
+    <string name="diag_title">诊断信息</string>
+    <string name="diag_copied">已复制诊断信息</string>
+    <string name="diag_account">账号</string>
+    <string name="diag_core">内核</string>
+    <string name="diag_self_test">网络自检</string>
+    <string name="diag_self_test_running">网络自检(进行中…)</string>
+    <string name="diag_self_test_idle">未运行</string>
+    <string name="diag_register_again">重新注册</string>
+    <string name="diag_run_self_test">重新自检</string>
+    <string name="diag_refresh">刷新</string>
+    <plurals name="diag_log_count">
+        <item quantity="other">日志 %1$d 行(最新在上)</item>
+    </plurals>
+    <string name="diag_account_not_saved">未保存</string>
+    <string name="diag_line_address">地址: %1$s</string>
+    <string name="diag_line_server">服务器: %1$s</string>
+    <string name="diag_line_transport">传输: %1$s 有效期: %2$ds</string>
+    <string name="diag_line_stun">STUN: %1$s</string>
+    <string name="diag_stun_off">关闭</string>
+    <string name="diag_line_registration">注册: %1$s</string>
+    <string name="diag_line_error">错误: %1$s</string>
+    <string name="diag_line_identity">身份: %1$s</string>
+    <string name="diag_clip_label">Sipoe 诊断报告</string>
+    <string name="diag_restricted_title">系统拦截了应用联网(EPERM)</string>
+    <string name="diag_restricted_step_1">1. 设置 → 应用管理 → Sipoe → 联网控制/流量:允许 WiFi 和移动数据</string>
+    <string name="diag_restricted_step_2">2. 手机管家/安全中心 → 网络助手/防火墙:放行 Sipoe</string>
+    <string name="diag_restricted_step_3">3. VPN/代理类应用的分应用规则:勾选 Sipoe,或关闭"禁止未选择应用联网"</string>
+    <string name="diag_restricted_step_4">4. 关闭对该应用的省电/后台限制后重试</string>
+    <string name="diag_state_started">已启动</string>
+    <string name="diag_state_stopped">未启动</string>
+    <string name="diag_none">无</string>
+    <string name="diag_core_transports">传输端口: udp=%1$s tcp=%2$s tls=%3$s</string>
+    <string name="diag_core_reachable">网络可达: %1$s</string>
+    <string name="diag_core_default_account">默认账号: %1$s</string>
+    <string name="diag_core_registration">注册状态: %1$s</string>
+    <string name="diag_core_version">版本: %1$s (%2$d)</string>
+
+    <!-- 网络自检 -->
+    <string name="selftest_dns_ok">DNS 解析: %1$s</string>
+    <string name="selftest_dns_failed">DNS 解析失败: %1$s</string>
+    <string name="selftest_bind_random_ok">本地 UDP 绑定(随机端口): 成功</string>
+    <string name="selftest_bind_random_failed">本地 UDP 绑定(随机端口)失败: %1$s</string>
+    <string name="selftest_bind_5060_ok">本地 UDP 绑定(5060): 成功</string>
+    <string name="selftest_bind_5060_failed">本地 UDP 绑定(5060)失败: %1$s</string>
+    <string name="selftest_probe_ok">UDP 探测 %1$s:%2$d: 收到响应 → %3$s</string>
+    <string name="selftest_probe_timeout">UDP 探测 %1$s:%2$d: 已发出但 %3$d 秒内无响应(服务器可能不回应 OPTIONS,或被中间设备丢弃)</string>
+    <string name="selftest_probe_failed">UDP 探测 %1$s:%2$d 失败: %3$s</string>
+    <string name="selftest_restricted">结论: 系统拦截了应用联网(EPERM),REGISTER 无法发出</string>
+
+    <!-- 诊断报告 -->
+    <string name="diag_report_title">=== Sipoe 诊断报告 ===</string>
+    <string name="diag_report_time">时间: %1$s</string>
+    <string name="diag_report_section_account">--- 账号 ---</string>
+    <string name="diag_report_section_registration">--- 注册 ---</string>
+    <string name="diag_report_section_core">--- 内核 ---</string>
+    <string name="diag_report_section_self_test">--- 网络自检 ---</string>
+    <string name="diag_report_section_logs">--- 日志 ---</string>
+
+    <!-- 设置 -->
+    <string name="settings_title">设置</string>
+    <string name="settings_language">语言</string>
+    <string name="settings_language_desc">应用显示语言</string>
+    <string name="settings_language_system">跟随系统</string>
+    <string name="settings_language_zh">简体中文</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_account">账号管理</string>
+    <string name="settings_diagnostics">诊断</string>
+    <string name="settings_version">版本 %1$s</string>
 </resources>
