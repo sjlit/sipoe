@@ -273,16 +273,6 @@ object LocaleSupport {
 
 ---
 
-## 🧪 已测试 / 验证账号
-
-测试时使用:
-```
-identity  : sip:REDACTED@example.invalid
-server    : sip:example.invalid:5060 (UDP)
-expires   : 300
-STUN      : stun.l.google.com:19302
-```
-
 > 若系统提示 `EPERM` 无法连接,通常为 HyperOS / EMUI 等定制系统的网络管控策略,
 > 按诊断页 → 网络自检 → 排查指引卡 操作即可。
 
