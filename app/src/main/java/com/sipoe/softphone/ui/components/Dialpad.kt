@@ -8,9 +8,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
@@ -58,7 +58,7 @@ val DIAL_KEYS: List<List<DialKey>> = listOf(
 fun Dialpad(
     onKeyPress: (DialKey) -> Unit,
     modifier: Modifier = Modifier,
-    keySize: Dp = 76.dp,
+    keySize: Dp = 84.dp,
     onLongZero: (() -> Unit)? = null,
 ) {
     val view = LocalView.current
@@ -75,25 +75,22 @@ fun Dialpad(
         onKeyPress(key)
     }
 
-    BoxWithConstraints(modifier = modifier) {
-        val horizontalGap = 20.dp
-        val fitted = (maxWidth - horizontalGap * 2) / 3
-        val size = if (fitted < keySize) fitted else keySize
-
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            DIAL_KEYS.forEach { row ->
-                Row(horizontalArrangement = Arrangement.spacedBy(horizontalGap)) {
-                    row.forEach { key ->
-                        DialKeyButton(
-                            key = key,
-                            size = size,
-                            onPress = { press(key) },
-                            onLongPress = if (key.label == "0") onLongZero else null,
-                        )
-                    }
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        DIAL_KEYS.forEach { row ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceAround,
+            ) {
+                row.forEach { key ->
+                    DialKeyButton(
+                        key = key,
+                        size = keySize,
+                        onPress = { press(key) },
+                        onLongPress = if (key.label == "0") onLongZero else null,
+                    )
                 }
             }
         }
@@ -121,14 +118,14 @@ private fun DialKeyButton(
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = key.label,
-                fontSize = if (key.letters.isEmpty()) 30.sp else 26.sp,
+                fontSize = if (key.letters.isEmpty()) 32.sp else 28.sp,
                 fontWeight = FontWeight.Light,
                 color = sipoe.onDialKey,
             )
             if (key.letters.isNotEmpty()) {
                 Text(
                     text = key.letters,
-                    fontSize = 10.sp,
+                    fontSize = 11.sp,
                     letterSpacing = 1.sp,
                     color = sipoe.onDialKey.copy(alpha = 0.75f),
                 )
