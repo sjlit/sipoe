@@ -20,6 +20,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class SipForegroundService : Service() {
@@ -63,20 +65,24 @@ class SipForegroundService : Service() {
         observing = true
 
         scope.launch {
-            AccountStore(applicationContext).flow.collect { settings ->
-                DiagLog.i(
-                    TAG,
-                    "Account emission complete=${settings.isComplete} " +
-                        "identity=${settings.identityUri} server=${settings.serverAddress}",
-                )
-                if (settings.isComplete) {
-                    SipCoreManager.applyAccount(settings)
-                } else {
-                    SipCoreManager.clearAccount()
-                    DiagLog.w(TAG, "Account incomplete, stopping service")
-                    stopSelf()
+            AccountStore(applicationContext).flow
+                .map { it.active }
+                // 只有激活账号本身变化才重新注册:新增或编辑其它账号不能打断当前注册
+                .distinctUntilChanged()
+                .collect { settings ->
+                    DiagLog.i(
+                        TAG,
+                        "Active account emission complete=${settings?.isComplete} " +
+                            "identity=${settings?.identityUri} server=${settings?.serverAddress}",
+                    )
+                    if (settings != null && settings.isComplete) {
+                        SipCoreManager.applyAccount(settings)
+                    } else {
+                        SipCoreManager.clearAccount()
+                        DiagLog.w(TAG, "No active account, stopping service")
+                        stopSelf()
+                    }
                 }
-            }
         }
 
         scope.launch {

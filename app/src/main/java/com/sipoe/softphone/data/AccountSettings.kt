@@ -2,6 +2,7 @@ package com.sipoe.softphone.data
 
 import androidx.annotation.StringRes
 import com.sipoe.softphone.R
+import kotlinx.serialization.Serializable
 
 enum class SipTransport(val label: String) {
     UDP("UDP"),
@@ -9,7 +10,16 @@ enum class SipTransport(val label: String) {
     TLS("TLS"),
 }
 
+/**
+ * 一个 SIP 账号的配置。
+ *
+ * [id] 为空表示这条配置还没有落库(新建表单),由 [AccountStore] 在保存时补上 UUID;
+ * [name] 是可选的备注名,只用于列表展示,不参与校验。
+ */
+@Serializable
 data class AccountSettings(
+    val id: String = "",
+    val name: String = "",
     val domain: String = "",
     val proxy: String = "",
     val username: String = "",
@@ -22,6 +32,10 @@ data class AccountSettings(
 ) {
     val isComplete: Boolean
         get() = domain.isNotBlank() && username.isNotBlank() && password.isNotBlank()
+
+    /** 列表展示名:优先备注名,否则退回账号地址。 */
+    val label: String
+        get() = name.trim().ifEmpty { identityUri }
 
     val identityUri: String
         get() = "sip:${username.trim()}@${domain.trim()}"
@@ -58,6 +72,7 @@ data class AccountSettings(
     }
 
     fun normalized(): AccountSettings = copy(
+        name = name.trim(),
         domain = stripScheme(domain),
         proxy = proxy.trim(),
         username = username.trim(),

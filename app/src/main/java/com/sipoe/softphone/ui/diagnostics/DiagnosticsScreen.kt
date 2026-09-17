@@ -63,14 +63,14 @@ fun DiagnosticsScreen(
     onBack: () -> Unit,
     accountViewModel: AccountViewModel = viewModel(),
 ) {
-    val saved by accountViewModel.saved.collectAsStateWithLifecycle()
+    val accountState by accountViewModel.accounts.collectAsStateWithLifecycle()
     val registration by accountViewModel.registration.collectAsStateWithLifecycle()
     val entries by DiagLog.entries.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val resources = LocalResources.current
     val clipboard = LocalClipboard.current
 
-    val account = saved
+    val account = accountState.active
     val coreSummary = remember(registration, account) { SipCoreManager.debugSummary() }
 
     var selfTest by remember { mutableStateOf<NetworkSelfTest.Report?>(null) }

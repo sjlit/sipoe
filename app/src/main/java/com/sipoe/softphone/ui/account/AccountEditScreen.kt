@@ -5,7 +5,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -27,8 +26,6 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -67,34 +64,38 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sipoe.softphone.R
 import com.sipoe.softphone.data.AccountSettings
 import com.sipoe.softphone.data.SipTransport
-import com.sipoe.softphone.sip.RegistrationStatus
 import com.sipoe.softphone.sip.SipCoreManager
-import com.sipoe.softphone.sip.SipRegistrationState
-import com.sipoe.softphone.sip.labelRes
-import com.sipoe.softphone.ui.theme.SipoeTheme
 import kotlinx.coroutines.launch
 
+/**
+ * 新增或编辑单个账号。[accountId] 为 null 表示新建。
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AccountScreen(
+fun AccountEditScreen(
+    accountId: String?,
     onBack: () -> Unit,
     onOpenDiagnostics: () -> Unit,
     viewModel: AccountViewModel = viewModel(),
 ) {
-    val saved by viewModel.saved.collectAsStateWithLifecycle()
+    val state by viewModel.accounts.collectAsStateWithLifecycle()
     val registration by viewModel.registration.collectAsStateWithLifecycle()
-    val saving by viewModel.saving.collectAsStateWithLifecycle()
+    val saving by viewModel.busy.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val resources = LocalResources.current
 
-    var form by remember(saved) { mutableStateOf(saved ?: AccountSettings()) }
+    // 新建账号在首次保存后才会拿到 id,后续保存要落在同一条记录上(空串代表尚未落库)
+    var editingId by rememberSaveable(accountId) { mutableStateOf(accountId.orEmpty()) }
+    val stored = state.find(editingId)
+    val isActive = stored != null && stored.id == state.activeId
+
+    var form by remember(stored) { mutableStateOf(stored ?: AccountSettings()) }
     var advancedExpanded by rememberSaveable { mutableStateOf(false) }
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
-    var showClearDialog by rememberSaveable { mutableStateOf(false) }
-    var awaitingOutcome by rememberSaveable { mutableStateOf(false) }
+    var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
     var showDiscardDialog by rememberSaveable { mutableStateOf(false) }
-    val isDirty = form != (saved ?: AccountSettings())
+    val isDirty = form != (stored ?: AccountSettings())
 
     fun attemptBack() {
         if (isDirty) showDiscardDialog = true else onBack()
@@ -103,23 +104,25 @@ fun AccountScreen(
     BackHandler(enabled = isDirty) { showDiscardDialog = true }
 
     LaunchedEffect(Unit) {
-        viewModel.messages.collect { message ->
-            awaitingOutcome = false
+        viewModel.events.collect { event ->
+            val message = when (event) {
+                is AccountEvent.Saved -> {
+                    editingId = event.id
+                    resources.getString(
+                        if (event.activated) {
+                            R.string.account_saved_active
+                        } else {
+                            R.string.account_saved_inactive
+                        },
+                    )
+                }
+
+                is AccountEvent.Failed -> event.message
+                is AccountEvent.Notice -> event.message
+            }
             snackbarHostState.currentSnackbarData?.dismiss()
             snackbarHostState.showSnackbar(message)
         }
-    }
-
-    LaunchedEffect(awaitingOutcome, registration.status) {
-        if (!awaitingOutcome) return@LaunchedEffect
-        val outcome = when (registration.status) {
-            RegistrationStatus.Registered -> resources.getString(R.string.account_register_success)
-            RegistrationStatus.Failed -> resources.getString(R.string.account_register_failed)
-            else -> null
-        } ?: return@LaunchedEffect
-        awaitingOutcome = false
-        snackbarHostState.currentSnackbarData?.dismiss()
-        snackbarHostState.showSnackbar(outcome)
     }
 
     Scaffold(
@@ -143,7 +146,6 @@ fun AccountScreen(
                                     snackbarHostState.showSnackbar(resources.getString(error))
                                 }
                             } else {
-                                awaitingOutcome = true
                                 viewModel.save(form)
                             }
                         },
@@ -152,7 +154,11 @@ fun AccountScreen(
                     ) {
                         Text(
                             text = stringResource(
-                                if (saving) R.string.account_saving else R.string.account_save,
+                                when {
+                                    saving -> R.string.account_saving
+                                    isActive || state.active == null -> R.string.account_save
+                                    else -> R.string.account_save_only
+                                },
                             ),
                         )
                     }
@@ -161,7 +167,13 @@ fun AccountScreen(
         },
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.account_title)) },
+                title = {
+                    Text(
+                        stringResource(
+                            if (stored == null) R.string.account_add else R.string.account_edit,
+                        ),
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { attemptBack() }) {
                         Icon(
@@ -186,18 +198,30 @@ fun AccountScreen(
                 .padding(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            RegistrationCard(
-                state = registration,
-                onRetry = { SipCoreManager.refreshRegistration() },
-            )
+            if (isActive) {
+                RegistrationCard(
+                    state = registration,
+                    onRetry = { SipCoreManager.refreshRegistration() },
+                )
+            }
 
-            saved?.takeIf { it.isComplete }?.let { account ->
+            stored?.takeIf { it.isComplete }?.let { account ->
                 Text(
                     text = "${account.identityUri} → ${account.serverAddress} · ${account.transport.label}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+
+            OutlinedTextField(
+                value = form.name,
+                onValueChange = { form = form.copy(name = it) },
+                label = { Text(stringResource(R.string.account_field_name)) },
+                placeholder = { Text(stringResource(R.string.account_field_name_hint)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                modifier = Modifier.fillMaxWidth(),
+            )
 
             OutlinedTextField(
                 value = form.domain,
@@ -353,13 +377,13 @@ fun AccountScreen(
 
             Spacer(Modifier.height(4.dp))
 
-            if (saved?.isComplete == true) {
+            if (stored != null) {
                 TextButton(
-                    onClick = { showClearDialog = true },
+                    onClick = { showDeleteDialog = true },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(
-                        text = stringResource(R.string.account_clear),
+                        text = stringResource(R.string.account_delete),
                         color = MaterialTheme.colorScheme.error,
                     )
                 }
@@ -393,96 +417,40 @@ fun AccountScreen(
         )
     }
 
-    if (showClearDialog) {
+    if (showDeleteDialog && stored != null) {
         AlertDialog(
-            onDismissRequest = { showClearDialog = false },
-            title = { Text(stringResource(R.string.account_clear_title)) },
-            text = { Text(stringResource(R.string.account_clear_message)) },
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text(stringResource(R.string.account_delete_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        if (isActive) {
+                            R.string.account_delete_message_active
+                        } else {
+                            R.string.account_delete_message
+                        },
+                    ),
+                )
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        showClearDialog = false
-                        form = AccountSettings()
-                        viewModel.clear()
+                        showDeleteDialog = false
+                        viewModel.delete(stored.id)
+                        onBack()
                     },
                 ) {
                     Text(
-                        text = stringResource(R.string.common_clear),
+                        text = stringResource(R.string.common_delete),
                         color = MaterialTheme.colorScheme.error,
                     )
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showClearDialog = false }) {
+                TextButton(onClick = { showDeleteDialog = false }) {
                     Text(stringResource(R.string.common_cancel))
                 }
             },
         )
-    }
-}
-
-@Composable
-private fun RegistrationCard(state: SipRegistrationState, onRetry: () -> Unit) {
-    val sipoe = SipoeTheme.colors
-    val color = when (state.status) {
-        RegistrationStatus.Registered -> sipoe.accept
-        RegistrationStatus.InProgress -> sipoe.warning
-        RegistrationStatus.Failed -> MaterialTheme.colorScheme.error
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-    Card(
-        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.08f)),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(
-            modifier = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text(
-                text = stringResource(state.status.labelRes),
-                color = color,
-                style = MaterialTheme.typography.titleSmall,
-            )
-            state.identity?.let {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            state.message
-                ?.takeIf { it.isNotBlank() && state.status == RegistrationStatus.Failed }
-                ?.let {
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-            state.errorDetail
-                ?.takeIf { state.status == RegistrationStatus.Failed }
-                ?.let {
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            if (state.networkRestricted) {
-                Text(
-                    text = stringResource(R.string.account_network_restricted),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
-            if (state.status == RegistrationStatus.Failed) {
-                TextButton(
-                    onClick = onRetry,
-                    contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp),
-                ) {
-                    Text(stringResource(R.string.account_retry_register))
-                }
-            }
-        }
     }
 }

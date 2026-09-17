@@ -86,7 +86,11 @@ object NotificationHelper {
                     if (call != null) {
                         "${context.getString(call.displayLabelRes)} · ${call.number}"
                     } else {
-                        context.getString(state.status.labelRes)
+                        // 带上当前激活账号,多账号时一眼能看出在用哪个身份
+                        listOfNotNull(
+                            context.getString(state.status.labelRes),
+                            state.identity?.withoutSipScheme(),
+                        ).joinToString(" · ")
                     },
                 )
                 .setCategory(NotificationCompat.CATEGORY_SERVICE)
@@ -117,6 +121,12 @@ object NotificationHelper {
     fun cancelIncomingCall(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
         manager.cancel(INCOMING_NOTIFICATION_ID)
+    }
+
+    private fun String.withoutSipScheme(): String = when {
+        startsWith("sips:", ignoreCase = true) -> substring(5)
+        startsWith("sip:", ignoreCase = true) -> substring(4)
+        else -> this
     }
 
     private fun openAppIntent(context: Context): PendingIntent {

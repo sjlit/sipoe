@@ -99,8 +99,23 @@
     <string name="history_date_format">MMM d, yyyy</string>
 
     <!-- Account -->
-    <string name="account_title">Account</string>
+    <string name="account_title">Accounts</string>
+    <string name="account_add">Add account</string>
+    <string name="account_edit">Edit account</string>
     <string name="account_diagnostics">Diagnostics</string>
+    <string name="account_list_empty_title">No accounts yet</string>
+    <string name="account_list_empty_message">Add a SIP account to make and receive calls.</string>
+    <string name="account_no_active_title">No active account</string>
+    <string name="account_no_active_message">Activate an account to make and receive calls. Only one account can be active at a time.</string>
+    <string name="account_activate">Activate</string>
+    <string name="account_deactivate">Deactivate</string>
+    <string name="account_deactivate_title">Deactivate this account?</string>
+    <string name="account_deactivate_message">It will be unregistered and stop receiving calls. Its settings are kept.</string>
+    <string name="account_deactivated">Deactivated, no longer receiving calls</string>
+    <string name="account_switch_blocked">Cannot switch accounts during a call</string>
+    <string name="account_incomplete_hint">Incomplete, edit to finish</string>
+    <string name="account_field_name">Label (optional)</string>
+    <string name="account_field_name_hint">e.g. Work, Home</string>
     <string name="account_field_domain">Domain</string>
     <string name="account_field_domain_hint">e.g. sip.example.com</string>
     <string name="account_field_proxy">Proxy (optional)</string>
@@ -117,11 +132,16 @@
     <string name="account_register_expires">Registration expiry (seconds)</string>
     <string name="account_stun_desc">For NAT traversal</string>
     <string name="account_stun_server">STUN server</string>
-    <string name="account_clear">Clear account</string>
-    <string name="account_clear_title">Clear account?</string>
-    <string name="account_clear_message">The account will be unregistered and removed from this device</string>
+    <string name="account_delete">Delete account</string>
+    <string name="account_delete_title">Delete this account?</string>
+    <string name="account_delete_message">The account will be removed from this device.</string>
+    <string name="account_delete_message_active">This account is currently active; deleting it unregisters it and stops incoming calls.</string>
+    <string name="account_deleted">Account deleted</string>
     <string name="account_save">Save and register</string>
+    <string name="account_save_only">Save only</string>
     <string name="account_saving">Saving…</string>
+    <string name="account_saved_active">Saved and activated</string>
+    <string name="account_saved_inactive">Saved, not activated. Tap \"Activate\" in the list to enable it.</string>
     <string name="account_register_success">Registered successfully</string>
     <string name="account_register_failed">Registration failed, see the status card above</string>
     <string name="account_retry_register">Retry registration</string>
@@ -186,7 +206,7 @@
         <item quantity="one">%1$d log line (newest first)</item>
         <item quantity="other">%1$d log lines (newest first)</item>
     </plurals>
-    <string name="diag_account_not_saved">Not saved</string>
+    <string name="diag_account_not_saved">No active account</string>
     <string name="diag_line_address">Address: %1$s</string>
     <string name="diag_line_server">Server: %1$s</string>
     <string name="diag_line_transport">Transport: %1$s Expires: %2$ds</string>

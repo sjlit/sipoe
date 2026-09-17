@@ -11,11 +11,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.sipoe.softphone.sip.CallController
-import com.sipoe.softphone.ui.account.AccountScreen
+import com.sipoe.softphone.ui.account.AccountEditScreen
+import com.sipoe.softphone.ui.account.AccountListScreen
 import com.sipoe.softphone.ui.call.InCallScreen
 import com.sipoe.softphone.ui.diagnostics.DiagnosticsScreen
 import com.sipoe.softphone.ui.dialer.DialerScreen
@@ -29,6 +32,13 @@ object SipoeRoutes {
     const val CALL = "call"
     const val DIAGNOSTICS = "diagnostics"
     const val SETTINGS = "settings"
+
+    const val NEW_ACCOUNT = "new"
+    const val ACCOUNT_ID_ARG = "accountId"
+    const val ACCOUNT_EDIT = "account_edit/{$ACCOUNT_ID_ARG}"
+
+    fun accountEdit(accountId: String? = null): String =
+        "account_edit/${accountId ?: NEW_ACCOUNT}"
 }
 
 @Composable
@@ -71,7 +81,22 @@ fun SipoeNavHost() {
             HistoryScreen(onBack = { navController.popBackStack() })
         }
         composable(SipoeRoutes.ACCOUNT) {
-            AccountScreen(
+            AccountListScreen(
+                onBack = { navController.popBackStack() },
+                onAddAccount = { navController.navigate(SipoeRoutes.accountEdit()) },
+                onEditAccount = { id -> navController.navigate(SipoeRoutes.accountEdit(id)) },
+                onOpenDiagnostics = { navController.navigate(SipoeRoutes.DIAGNOSTICS) },
+            )
+        }
+        composable(
+            route = SipoeRoutes.ACCOUNT_EDIT,
+            arguments = listOf(navArgument(SipoeRoutes.ACCOUNT_ID_ARG) { type = NavType.StringType }),
+        ) { entry ->
+            val accountId = entry.arguments
+                ?.getString(SipoeRoutes.ACCOUNT_ID_ARG)
+                ?.takeIf { it != SipoeRoutes.NEW_ACCOUNT }
+            AccountEditScreen(
+                accountId = accountId,
                 onBack = { navController.popBackStack() },
                 onOpenDiagnostics = { navController.navigate(SipoeRoutes.DIAGNOSTICS) },
             )

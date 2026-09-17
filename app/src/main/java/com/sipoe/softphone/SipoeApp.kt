@@ -24,9 +24,9 @@ class SipoeApp : Application() {
         LocaleSupport.applyToApplication(this)
         SipCoreManager.initialize(this)
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
-            val settings = runCatching { AccountStore(this@SipoeApp).flow.first() }.getOrNull()
+            val active = runCatching { AccountStore(this@SipoeApp).flow.first().active }.getOrNull()
                 ?: return@launch
-            if (settings.isComplete) {
+            if (active.isComplete) {
                 runCatching { SipForegroundService.start(this@SipoeApp) }
                     .onFailure { Log.e(TAG, "Unable to auto start SIP service", it) }
             }

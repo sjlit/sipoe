@@ -99,7 +99,22 @@
 
     <!-- 账号页 -->
     <string name="account_title">账号</string>
+    <string name="account_add">添加账号</string>
+    <string name="account_edit">编辑账号</string>
     <string name="account_diagnostics">诊断</string>
+    <string name="account_list_empty_title">还没有账号</string>
+    <string name="account_list_empty_message">添加一个 SIP 账号后即可拨打和接听电话。</string>
+    <string name="account_no_active_title">未激活任何账号</string>
+    <string name="account_no_active_message">激活一个账号后才能拨打和接听电话,同一时间只能激活一个。</string>
+    <string name="account_activate">激活</string>
+    <string name="account_deactivate">停用</string>
+    <string name="account_deactivate_title">停用该账号?</string>
+    <string name="account_deactivate_message">将注销该账号并停止接收来电,配置会保留。</string>
+    <string name="account_deactivated">已停用,不再接收来电</string>
+    <string name="account_switch_blocked">通话中无法切换账号</string>
+    <string name="account_incomplete_hint">配置不完整,请编辑补全</string>
+    <string name="account_field_name">备注名称(可选)</string>
+    <string name="account_field_name_hint">例如 公司、家里</string>
     <string name="account_field_domain">域</string>
     <string name="account_field_domain_hint">例如 sip.example.com</string>
     <string name="account_field_proxy">代理(可选)</string>
@@ -116,11 +131,16 @@
     <string name="account_register_expires">注册有效期(秒)</string>
     <string name="account_stun_desc">用于 NAT 穿透</string>
     <string name="account_stun_server">STUN 服务器</string>
-    <string name="account_clear">清空账号</string>
-    <string name="account_clear_title">清空账号?</string>
-    <string name="account_clear_message">将注销并删除本机保存的账号信息</string>
+    <string name="account_delete">删除账号</string>
+    <string name="account_delete_title">删除该账号?</string>
+    <string name="account_delete_message">将从本机删除该账号的配置。</string>
+    <string name="account_delete_message_active">该账号当前处于激活状态,删除后会注销并停止接收来电。</string>
+    <string name="account_deleted">已删除账号</string>
     <string name="account_save">保存并注册</string>
+    <string name="account_save_only">仅保存</string>
     <string name="account_saving">保存中…</string>
+    <string name="account_saved_active">已保存并激活</string>
+    <string name="account_saved_inactive">已保存,当前未激活。如需启用请到列表点「激活」</string>
     <string name="account_register_success">注册成功</string>
     <string name="account_register_failed">注册失败,详情见上方状态卡片</string>
     <string name="account_retry_register">重试注册</string>
@@ -184,7 +204,7 @@
     <plurals name="diag_log_count">
         <item quantity="other">日志 %1$d 行(最新在上)</item>
     </plurals>
-    <string name="diag_account_not_saved">未保存</string>
+    <string name="diag_account_not_saved">无激活账号</string>
     <string name="diag_line_address">地址: %1$s</string>
     <string name="diag_line_server">服务器: %1$s</string>
     <string name="diag_line_transport">传输: %1$s 有效期: %2$ds</string>
